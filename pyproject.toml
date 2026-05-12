@@ -1,0 +1,21 @@
+[project]
+name = "tg-bot"
+version = "1.0.0"
+description = "TG Bot Builder — create AI bots connected to the Imperal platform"
+requires-python = ">=3.9"
+dependencies = ["imperal-sdk>=4.1.9"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+
+[tool.setuptools]
+py-modules = [
+    "main", "app", "params", "api_client",
+    "handlers_bots", "handlers_schedules", "handlers_notify", "handlers_settings",
+    "panels_side", "panels_main", "skeleton",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
