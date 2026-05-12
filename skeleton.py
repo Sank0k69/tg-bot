@@ -1,8 +1,7 @@
 """Skeleton context — inject bot status into Webbee LLM context."""
 from __future__ import annotations
 
-from app import ext, load_settings
-from api_client import mos_list_bots
+from app import ext, load_settings, get_cached_bots
 
 
 @ext.skeleton(
@@ -13,7 +12,7 @@ from api_client import mos_list_bots
 async def refresh_tgbot_status(ctx) -> dict:
     """Inject bot state so Webbee knows what bots exist and their status."""
     try:
-        bots = await mos_list_bots(ctx)
+        bots = await get_cached_bots(ctx)
     except Exception:
         bots = []
 

@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 from imperal_sdk import ui
-from app import ext
-from api_client import mos_list_bots, mos_list_schedules
+from app import ext, get_cached_bots
+from api_client import mos_list_schedules
 
 
 def _create_view() -> ui.UINode:
@@ -154,7 +154,7 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
 async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None,
                      note_id: str = None):
     """Center panel: create / unlinked / detail / list views."""
-    bots = await mos_list_bots(ctx)
+    bots = await get_cached_bots(ctx)
 
     if active_view == "create":
         return _create_view()

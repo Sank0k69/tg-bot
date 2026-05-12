@@ -55,6 +55,35 @@ async def save_settings(ctx, values: dict) -> dict:
     return merged
 
 
+BOTS_CACHE_KEY = "tgbot_bots_list"
+BOTS_CACHE_TTL = 60  # seconds
+
+
+async def get_cached_bots(ctx) -> list:
+    """Fetch bots list — served from ctx.cache for 60s, MOS only on miss."""
+    try:
+        cached = await ctx.cache.get(BOTS_CACHE_KEY)
+        if cached is not None:
+            return cached
+    except Exception:
+        pass
+    from api_client import mos_list_bots
+    bots = await mos_list_bots(ctx)
+    try:
+        await ctx.cache.set(BOTS_CACHE_KEY, bots, ttl=BOTS_CACHE_TTL)
+    except Exception:
+        pass
+    return bots
+
+
+async def invalidate_bots_cache(ctx) -> None:
+    """Call after any write op (create/delete/update) to force fresh fetch."""
+    try:
+        await ctx.cache.set(BOTS_CACHE_KEY, None, ttl=1)
+    except Exception:
+        pass
+
+
 @ext.health_check
 async def health_check(ctx):
     """Verify extension is reachable; degraded if no bots configured."""

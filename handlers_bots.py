@@ -4,7 +4,7 @@ from __future__ import annotations
 from imperal_sdk import ActionResult
 from imperal_sdk.types import ActionResult  # noqa: F811
 
-from app import chat, load_settings, save_settings
+from app import chat, load_settings, save_settings, get_cached_bots, invalidate_bots_cache
 from params import EmptyParams, CreateBotParams, BotNameParams, SetPromptParams
 from api_client import (
     mos_create_bot, mos_list_bots, mos_delete_bot,
@@ -28,7 +28,7 @@ def _bot_status(bot: dict) -> str:
 )
 async def fn_list_bots(ctx, params: EmptyParams) -> ActionResult:
     """Show all user bots with status."""
-    bots = await mos_list_bots(ctx)
+    bots = await get_cached_bots(ctx)
     rows = [
         {"name": b["name"], "mode": b.get("mode", "standalone"),
          "status": _bot_status(b), "id": b["id"]}
@@ -63,6 +63,7 @@ async def fn_create_bot(ctx, params: CreateBotParams) -> ActionResult:
     )
     if "error" in result:
         return ActionResult.error(error=result["error"])
+    await invalidate_bots_cache(ctx)
     return ActionResult.success(
         result,
         summary=(
@@ -83,11 +84,12 @@ async def fn_create_bot(ctx, params: CreateBotParams) -> ActionResult:
 )
 async def fn_delete_bot(ctx, params: BotNameParams) -> ActionResult:
     """Delete bot by name."""
-    bots = await mos_list_bots(ctx)
+    bots = await get_cached_bots(ctx)
     bot = next((b for b in bots if b["name"] == params.bot_name), None)
     if not bot:
         return ActionResult.error(error=f"Bot '{params.bot_name}' not found.")
     await mos_delete_bot(ctx, bot["id"])
+    await invalidate_bots_cache(ctx)
     return ActionResult.success({}, summary=f"Bot '{params.bot_name}' deleted.")
 
 
@@ -101,11 +103,12 @@ async def fn_delete_bot(ctx, params: BotNameParams) -> ActionResult:
 )
 async def fn_enable_bot(ctx, params: BotNameParams) -> ActionResult:
     """Enable bot by name."""
-    bots = await mos_list_bots(ctx)
+    bots = await get_cached_bots(ctx)
     bot = next((b for b in bots if b["name"] == params.bot_name), None)
     if not bot:
         return ActionResult.error(error=f"Bot '{params.bot_name}' not found.")
     await mos_enable_bot(ctx, bot["id"])
+    await invalidate_bots_cache(ctx)
     return ActionResult.success({}, summary=f"Bot '{params.bot_name}' enabled.")
 
 
@@ -119,11 +122,12 @@ async def fn_enable_bot(ctx, params: BotNameParams) -> ActionResult:
 )
 async def fn_disable_bot(ctx, params: BotNameParams) -> ActionResult:
     """Disable bot by name."""
-    bots = await mos_list_bots(ctx)
+    bots = await get_cached_bots(ctx)
     bot = next((b for b in bots if b["name"] == params.bot_name), None)
     if not bot:
         return ActionResult.error(error=f"Bot '{params.bot_name}' not found.")
     await mos_disable_bot(ctx, bot["id"])
+    await invalidate_bots_cache(ctx)
     return ActionResult.success({}, summary=f"Bot '{params.bot_name}' disabled.")
 
 
@@ -137,11 +141,12 @@ async def fn_disable_bot(ctx, params: BotNameParams) -> ActionResult:
 )
 async def fn_set_prompt(ctx, params: SetPromptParams) -> ActionResult:
     """Change bot system prompt."""
-    bots = await mos_list_bots(ctx)
+    bots = await get_cached_bots(ctx)
     bot = next((b for b in bots if b["name"] == params.bot_name), None)
     if not bot:
         return ActionResult.error(error=f"Bot '{params.bot_name}' not found.")
     await mos_update_bot(ctx, bot["id"], system_prompt=params.system_prompt)
+    await invalidate_bots_cache(ctx)
     return ActionResult.success({}, summary=f"Prompt updated for '{params.bot_name}'.")
 
 
@@ -155,11 +160,12 @@ async def fn_set_prompt(ctx, params: SetPromptParams) -> ActionResult:
 )
 async def fn_relink_bot(ctx, params: BotNameParams) -> ActionResult:
     """Generate new link_code, clear owner_chat_id."""
-    bots = await mos_list_bots(ctx)
+    bots = await get_cached_bots(ctx)
     bot = next((b for b in bots if b["name"] == params.bot_name), None)
     if not bot:
         return ActionResult.error(error=f"Bot '{params.bot_name}' not found.")
     result = await mos_relink_bot(ctx, bot["id"])
+    await invalidate_bots_cache(ctx)
     return ActionResult.success(
         result,
         summary=(

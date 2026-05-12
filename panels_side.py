@@ -2,8 +2,7 @@
 from __future__ import annotations
 
 from imperal_sdk import ui
-from app import ext
-from api_client import mos_list_bots
+from app import ext, get_cached_bots
 
 
 def _status_badge(bot: dict) -> ui.UINode:
@@ -24,7 +23,7 @@ def _status_badge(bot: dict) -> ui.UINode:
 )
 async def sidebar_panel(ctx):
     """Left sidebar: bot list with status badges and create button."""
-    bots = await mos_list_bots(ctx)
+    bots = await get_cached_bots(ctx)
 
     create_btn = ui.Form(action="create_bot", children=[], submit_label="+ Создать бота")
 

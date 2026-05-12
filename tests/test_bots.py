@@ -14,7 +14,7 @@ def ctx():
 
 @pytest.mark.asyncio
 async def test_list_bots_empty(ctx):
-    with patch("handlers_bots.mos_list_bots", new=AsyncMock(return_value=[])):
+    with patch("handlers_bots.get_cached_bots", new=AsyncMock(return_value=[])):
         result = await handlers_bots.fn_list_bots(ctx, EmptyParams())
     assert result.status == "success"
     assert result.data["total"] == 0
@@ -27,7 +27,7 @@ async def test_list_bots_shows_status(ctx):
         {"id": "b1", "name": "MyBot", "enabled": 1, "owner_chat_id": "123", "mode": "standalone"},
         {"id": "b2", "name": "UnlinkedBot", "enabled": 1, "owner_chat_id": None, "mode": "webbee"},
     ]
-    with patch("handlers_bots.mos_list_bots", new=AsyncMock(return_value=bots)):
+    with patch("handlers_bots.get_cached_bots", new=AsyncMock(return_value=bots)):
         result = await handlers_bots.fn_list_bots(ctx, EmptyParams())
     assert result.data["total"] == 2
     statuses = {r["name"]: r["status"] for r in result.data["bots"]}
@@ -45,7 +45,7 @@ async def test_create_bot_requires_token(ctx):
 
 @pytest.mark.asyncio
 async def test_delete_bot_not_found(ctx):
-    with patch("handlers_bots.mos_list_bots", new=AsyncMock(return_value=[])):
+    with patch("handlers_bots.get_cached_bots", new=AsyncMock(return_value=[])):
         result = await handlers_bots.fn_delete_bot(ctx, BotNameParams(bot_name="Ghost"))
     assert result.status == "error"
     assert "not found" in result.error.lower()
@@ -54,7 +54,8 @@ async def test_delete_bot_not_found(ctx):
 @pytest.mark.asyncio
 async def test_enable_bot_success(ctx):
     bots = [{"id": "b1", "name": "MyBot", "enabled": 0, "owner_chat_id": None}]
-    with patch("handlers_bots.mos_list_bots", new=AsyncMock(return_value=bots)), \
-         patch("handlers_bots.mos_enable_bot", new=AsyncMock(return_value={"ok": True})):
+    with patch("handlers_bots.get_cached_bots", new=AsyncMock(return_value=bots)), \
+         patch("handlers_bots.mos_enable_bot", new=AsyncMock(return_value={"ok": True})), \
+         patch("handlers_bots.invalidate_bots_cache", new=AsyncMock()):
         result = await handlers_bots.fn_enable_bot(ctx, BotNameParams(bot_name="MyBot"))
     assert result.status == "success"
