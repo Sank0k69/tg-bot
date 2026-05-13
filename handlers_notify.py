@@ -95,30 +95,25 @@ async def handle_tg_message(ctx, headers: dict, body: str, query_params: dict) -
     if not chat_id or not text or not bot_id:
         return {"ok": True}
 
-    # Generate AI reply via MOS (ctx.http works in webhook context; ctx.ai may not)
+    # Generate short AI reply via MOS dedicated chat endpoint
     reply_text = "Не удалось сформировать ответ."
     try:
         resp = await ctx.http.post(
-            f"{SERVER_URL}/api/content/generate",
+            f"{SERVER_URL}/api/tgbot/ai-chat",
             json={
-                "topic": text,
-                "keyword": "",
-                "language": "ru",
-                "word_count": 200,
-                "article_type": "custom",
-                "brand_voice": "Кратко и по делу. Отвечай на вопрос напрямую.",
-                "system_prompt_override": (
-                    "Ты личный ассистент владельца бизнеса. "
+                "message": text,
+                "history": [],
+                "system_prompt": (
+                    "Ты личный ассистент Александра. "
                     "Отвечай кратко (1-3 предложения), по-русски, по делу. "
-                    "Это сообщение в Telegram — не статья, не эссе."
+                    "Это Telegram — не пиши длинные статьи."
                 ),
             },
             headers={"X-API-Key": SERVER_API_KEY},
-            timeout=25,
+            timeout=20,
         )
         if resp.ok:
-            result = resp.json()
-            reply_text = result.get("content", reply_text)[:1000]
+            reply_text = resp.json().get("reply", reply_text)
     except Exception as e:
         print(f"[webbee-webhook] AI call failed: {e}")
 
