@@ -5,11 +5,22 @@ from imperal_sdk import ActionResult
 from imperal_sdk.types import ActionResult  # noqa: F811
 
 from app import chat, load_settings, save_settings, get_cached_bots, invalidate_bots_cache
-from params import EmptyParams, CreateBotParams, BotNameParams, SetPromptParams
+from params import EmptyParams, CreateBotParams, BotNameParams, BotIdParams, SetPromptParams
 from api_client import (
     mos_create_bot, mos_list_bots, mos_delete_bot,
     mos_update_bot, mos_enable_bot, mos_disable_bot, mos_relink_bot,
 )
+
+NAV_COLLECTION = "tgbot_nav"
+
+
+async def _set_nav(ctx, view: str) -> None:
+    page = await ctx.store.query(NAV_COLLECTION, limit=1)
+    docs = getattr(page, "data", None) or []
+    if docs:
+        await ctx.store.update(NAV_COLLECTION, docs[0].id, {"view": view})
+    else:
+        await ctx.store.create(NAV_COLLECTION, {"view": view})
 
 
 def _bot_status(bot: dict) -> str:
@@ -18,6 +29,30 @@ def _bot_status(bot: dict) -> str:
     if not bot.get("owner_chat_id"):
         return "unlinked"
     return "active"
+
+
+@chat.function(
+    "show_create_form",
+    description="Navigate to bot creation form in the panel.",
+    action_type="read",
+    event="tgbot.nav_create",
+)
+async def fn_show_create_form(ctx, params: EmptyParams) -> ActionResult:
+    """Store nav state so main panel renders create view on next refresh."""
+    await _set_nav(ctx, "create")
+    return ActionResult.success({}, summary="")
+
+
+@chat.function(
+    "open_bot_detail",
+    description="Open a specific bot's detail view in the panel.",
+    action_type="read",
+    event="tgbot.nav_detail",
+)
+async def fn_open_bot_detail(ctx, params: BotIdParams) -> ActionResult:
+    """Store nav state so main panel renders bot detail view."""
+    await _set_nav(ctx, f"detail:{params.bot_id}")
+    return ActionResult.success({}, summary="")
 
 
 @chat.function(
