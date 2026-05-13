@@ -8,7 +8,7 @@ from api_client import mos_list_schedules
 
 def _create_view() -> ui.UINode:
     return ui.Stack(children=[
-        ui.Header(title="Создать Telegram-бота"),
+        ui.Header(text="Создать Telegram-бота"),
         ui.Form(
             action="create_bot",
             submit_label="Создать бота",
@@ -40,17 +40,17 @@ def _unlinked_view(bot: dict) -> ui.UINode:
     invite_link = bot.get("invite_link", "")
     qr = bot.get("qr_base64", "")
     children = [
-        ui.Header(title=f"Бот \"{bot['name']}\" создан!"),
+        ui.Header(text=f"Бот \"{bot['name']}\" создан!"),
         ui.Alert(type="success", message="Отсканируй QR — Telegram откроется на боте. Нажми START."),
     ]
     if qr:
         children.append(ui.Image(src=f"data:image/png;base64,{qr}", alt="QR код", width=200))
     children += [
         ui.Stack(direction="row", children=[
-            ui.Text(text=invite_link or "Ссылка недоступна"),
+            ui.Text(content=invite_link or "Ссылка недоступна"),
         ]),
         ui.Alert(type="info", message="QR действителен 24 часа. После истечения — нажми 'Перепривязать'."),
-        ui.Text(text="Панель обновится автоматически после привязки."),
+        ui.Text(content="Панель обновится автоматически после привязки."),
     ]
     return ui.Stack(children=children)
 
@@ -67,7 +67,7 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
     for s in schedules:
         sched_items.append(
             ui.Stack(direction="row", children=[
-                ui.Text(text=f"{s['cron_expr']}  {s['description']}  ({s['task_type']})"),
+                ui.Text(content=f"{s['cron_expr']}  {s['description']}  ({s['task_type']})"),
                 ui.Form(
                     action="remove_schedule",
                     children=[
@@ -80,7 +80,7 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
 
     return ui.Stack(children=[
         ui.Stack(direction="row", children=[
-            ui.Header(title=f"{bot['name']}  [{status}]"),
+            ui.Header(text=f"{bot['name']}  [{status}]"),
             ui.Form(
                 action="disable_bot" if bot.get("enabled") else "enable_bot",
                 children=[ui.Input(param_name="bot_name", label="", placeholder=bot["name"])],
@@ -92,10 +92,10 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                 submit_label="Удалить",
             ),
         ]),
-        ui.Text(text=f"@{bot.get('bot_username', '')} | Режим: {bot.get('mode', 'standalone')}"),
+        ui.Text(content=f"@{bot.get('bot_username', '')} | Режим: {bot.get('mode', 'standalone')}"),
         ui.Divider(),
         ui.Section(title="Системный промпт", collapsible=True, children=[
-            ui.Text(text=bot.get("system_prompt") or "(не задан)"),
+            ui.Text(content=bot.get("system_prompt") or "(не задан)"),
             ui.Form(
                 action="set_prompt",
                 submit_label="Обновить промпт",
@@ -173,14 +173,14 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
     # Default list view
     if not bots:
         return ui.Stack(children=[
-            ui.Header(title="TG Bot Builder"),
+            ui.Header(text="TG Bot Builder"),
             ui.Empty(message="Ботов нет."),
             ui.Form(action="create_bot", children=[], submit_label="Создать первого бота"),
         ])
 
     rows = [
         ui.Stack(direction="row", children=[
-            ui.Text(text=b["name"]),
+            ui.Text(content=b["name"]),
             ui.Badge(
                 label="Active" if b.get("owner_chat_id") and b.get("enabled") else
                        "Unlinked" if not b.get("owner_chat_id") else "Disabled",
@@ -196,7 +196,7 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
         for b in bots
     ]
     return ui.Stack(children=[
-        ui.Header(title="Мои боты"),
+        ui.Header(text="Мои боты"),
         ui.Form(action="create_bot", children=[], submit_label="+ Создать бота"),
         ui.Divider(),
         *rows,
