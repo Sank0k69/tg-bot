@@ -5,6 +5,23 @@ from imperal_sdk import ui
 from app import ext, get_cached_bots
 from api_client import mos_list_schedules
 
+NAV_COLLECTION = "tgbot_nav"
+
+
+async def _get_nav_view(ctx) -> str:
+    """Read pending nav view from store, then clear it."""
+    try:
+        page = await ctx.store.query(NAV_COLLECTION, limit=1)
+        docs = getattr(page, "data", None) or []
+        if docs and isinstance(getattr(docs[0], "data", None), dict):
+            view = docs[0].data.get("view", "")
+            if view:
+                await ctx.store.update(NAV_COLLECTION, docs[0].id, {"view": ""})
+            return view
+    except Exception:
+        pass
+    return ""
+
 
 def _create_view() -> ui.UINode:
     return ui.Stack(children=[
@@ -146,12 +163,23 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
     slot="center",
     title="TG Bot Builder",
     icon="MessageCircle",
-    refresh="on_event:tgbot.created,tgbot.deleted,tgbot.updated,tgbot.listed",
+    refresh="on_event:tgbot.created,tgbot.deleted,tgbot.updated,tgbot.listed,tgbot.nav_create,tgbot.nav_detail",
 )
 async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None,
                      note_id: str = None):
     """Center panel: create / unlinked / detail / list views."""
     bots = await get_cached_bots(ctx)
+
+    # Check store-based navigation (fired from sidebar buttons)
+    nav_view = await _get_nav_view(ctx)
+    if nav_view == "create":
+        return _create_view()
+    if nav_view and nav_view.startswith("detail:"):
+        bot_id = nav_view.split(":", 1)[1]
+        bot = next((b for b in bots if b["id"] == bot_id), None)
+        if bot:
+            schedules = await mos_list_schedules(ctx, bot_id)
+            return _detail_view(bot, schedules)
 
     if active_view == "create":
         return _create_view()
@@ -167,15 +195,9 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
             schedules = await mos_list_schedules(ctx, selected_bot_id)
             return _detail_view(bot, schedules)
 
+    # No bots — show create form directly
     if not bots:
-        return ui.Stack(children=[
-            ui.Header(text="TG Bot Builder"),
-            ui.Empty(message="Ботов нет."),
-            ui.Button(
-                label="Создать первого бота",
-                on_click=ui.Call("__panel__main", active_view="create", note_id="board"),
-            ),
-        ])
+        return _create_view()
 
     rows = [
         ui.Stack(direction="row", children=[
@@ -186,20 +208,17 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
                 color="green" if b.get("owner_chat_id") and b.get("enabled") else
                        "orange" if not b.get("owner_chat_id") else "red",
             ),
-            ui.Button(
-                label="Открыть",
-                on_click=ui.Call("__panel__main", active_view="detail",
-                                 selected_bot_id=b["id"], note_id="board"),
+            ui.Form(
+                action="open_bot_detail",
+                children=[ui.Input(param_name="bot_id", placeholder=b["id"])],
+                submit_label="Открыть",
             ),
         ])
         for b in bots
     ]
     return ui.Stack(children=[
         ui.Header(text="Мои боты"),
-        ui.Button(
-            label="+ Создать бота",
-            on_click=ui.Call("__panel__main", active_view="create", note_id="board"),
-        ),
+        ui.Form(action="show_create_form", children=[], submit_label="+ Создать бота"),
         ui.Divider(),
         *rows,
     ])
