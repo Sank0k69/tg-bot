@@ -8,21 +8,21 @@
   "icon": "icon.svg",
   "actions_explicit": true,
   "system": false,
-  "capabilities": [],
+  "capabilities": [
+    "Create Telegram Bots",
+    "AI Bot Assistant",
+    "Scheduled Notifications",
+    "Bot Management",
+    "Send Messages"
+  ],
   "tools": [
     {
       "name": "tg_bot",
       "description": "TG Bot Builder — create Telegram bots. ALWAYS use for: создать бота, настрой бота, добавь расписание уведомлений, отправь сообщение через бота, покажи ботов, удали бота, настрой уведомления в Telegram, привяжи бота, перепривяжи бота.",
       "scopes": [],
       "parameters": {
-        "message": {
-          "type": "string",
-          "required": false
-        },
-        "kwargs": {
-          "type": "string",
-          "required": true
-        }
+        "message": {"type": "string", "required": false},
+        "kwargs": {"type": "string", "required": true}
       }
     },
     {
@@ -32,17 +32,59 @@
       "parameters": {}
     },
     {
+      "name": "show_create_form",
+      "description": "Navigate to bot creation wizard step 1 (BotFather instructions).",
+      "action_type": "read",
+      "chain_callable": false,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {"properties": {}, "title": "EmptyParams", "type": "object"},
+      "return_schema": {},
+      "event": "tgbot.nav_create",
+      "scopes": [],
+      "owner_chat_tool": "tg_bot"
+    },
+    {
+      "name": "show_step2_form",
+      "description": "Navigate to bot creation wizard step 2 (token input form).",
+      "action_type": "read",
+      "chain_callable": false,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {"properties": {}, "title": "EmptyParams", "type": "object"},
+      "return_schema": {},
+      "event": "tgbot.nav_step2",
+      "scopes": [],
+      "owner_chat_tool": "tg_bot"
+    },
+    {
+      "name": "open_bot_detail",
+      "description": "Open a specific bot's detail view in the panel.",
+      "action_type": "read",
+      "chain_callable": false,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "bot_id": {"description": "Bot UUID", "title": "Bot Id", "type": "string"}
+        },
+        "required": ["bot_id"],
+        "title": "BotIdParams",
+        "type": "object"
+      },
+      "return_schema": {},
+      "event": "tgbot.nav_detail",
+      "scopes": [],
+      "owner_chat_tool": "tg_bot"
+    },
+    {
       "name": "list_bots",
       "description": "List all Telegram bots for this user.",
       "action_type": "read",
       "chain_callable": false,
       "effects": [],
       "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "EmptyParams",
-        "type": "object"
-      },
+      "params_schema": {"properties": {}, "title": "EmptyParams", "type": "object"},
       "return_schema": {},
       "event": "tgbot.listed",
       "scopes": [],
@@ -50,48 +92,20 @@
     },
     {
       "name": "create_bot",
-      "description": "Create a new Telegram bot. Requires: name, token from @BotFather, system_prompt. mode: 'standalone' (custom AI) or 'webbee' (full Imperal access). owner_tg_id optional — alternative to QR linking.",
+      "description": "Create a new Telegram bot. Requires: name, token from @BotFather. system_prompt optional. mode defaults to standalone.",
       "action_type": "write",
       "chain_callable": true,
-      "effects": [
-        "create:bot"
-      ],
+      "effects": ["create:bot"],
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "name": {
-            "description": "Bot display name, e.g. 'Репорт Блога'",
-            "title": "Name",
-            "type": "string"
-          },
-          "token": {
-            "description": "Telegram bot token from @BotFather",
-            "title": "Token",
-            "type": "string"
-          },
-          "system_prompt": {
-            "default": "",
-            "description": "AI persona and instructions",
-            "title": "System Prompt",
-            "type": "string"
-          },
-          "mode": {
-            "default": "standalone",
-            "description": "'standalone' or 'webbee'",
-            "title": "Mode",
-            "type": "string"
-          },
-          "owner_tg_id": {
-            "default": "",
-            "description": "Your Telegram user ID (optional, alternative to QR linking)",
-            "title": "Owner Tg Id",
-            "type": "string"
-          }
+          "name": {"description": "Bot display name", "title": "Name", "type": "string"},
+          "token": {"description": "Telegram bot token from @BotFather", "title": "Token", "type": "string"},
+          "system_prompt": {"default": "", "description": "AI persona and instructions", "title": "System Prompt", "type": "string"},
+          "mode": {"default": "standalone", "description": "'standalone' or 'webbee'", "title": "Mode", "type": "string"},
+          "owner_tg_id": {"default": "", "description": "Your Telegram user ID (optional)", "title": "Owner Tg Id", "type": "string"}
         },
-        "required": [
-          "name",
-          "token"
-        ],
+        "required": ["name", "token"],
         "title": "CreateBotParams",
         "type": "object"
       },
@@ -105,21 +119,13 @@
       "description": "Delete a Telegram bot permanently. Removes webhook and all schedules.",
       "action_type": "destructive",
       "chain_callable": true,
-      "effects": [
-        "delete:bot"
-      ],
+      "effects": ["delete:bot"],
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "bot_name": {
-            "description": "Bot name to act on",
-            "title": "Bot Name",
-            "type": "string"
-          }
+          "bot_name": {"description": "Bot name to act on", "title": "Bot Name", "type": "string"}
         },
-        "required": [
-          "bot_name"
-        ],
+        "required": ["bot_name"],
         "title": "BotNameParams",
         "type": "object"
       },
@@ -133,21 +139,13 @@
       "description": "Enable a disabled Telegram bot.",
       "action_type": "write",
       "chain_callable": true,
-      "effects": [
-        "update:bot"
-      ],
+      "effects": ["update:bot"],
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "bot_name": {
-            "description": "Bot name to act on",
-            "title": "Bot Name",
-            "type": "string"
-          }
+          "bot_name": {"description": "Bot name to act on", "title": "Bot Name", "type": "string"}
         },
-        "required": [
-          "bot_name"
-        ],
+        "required": ["bot_name"],
         "title": "BotNameParams",
         "type": "object"
       },
@@ -161,21 +159,13 @@
       "description": "Disable a Telegram bot (stops responding to messages).",
       "action_type": "write",
       "chain_callable": true,
-      "effects": [
-        "update:bot"
-      ],
+      "effects": ["update:bot"],
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "bot_name": {
-            "description": "Bot name to act on",
-            "title": "Bot Name",
-            "type": "string"
-          }
+          "bot_name": {"description": "Bot name to act on", "title": "Bot Name", "type": "string"}
         },
-        "required": [
-          "bot_name"
-        ],
+        "required": ["bot_name"],
         "title": "BotNameParams",
         "type": "object"
       },
@@ -189,27 +179,14 @@
       "description": "Update a bot's system prompt.",
       "action_type": "write",
       "chain_callable": true,
-      "effects": [
-        "update:bot"
-      ],
+      "effects": ["update:bot"],
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "bot_name": {
-            "description": "Bot name",
-            "title": "Bot Name",
-            "type": "string"
-          },
-          "system_prompt": {
-            "description": "New system prompt text",
-            "title": "System Prompt",
-            "type": "string"
-          }
+          "bot_name": {"description": "Bot name", "title": "Bot Name", "type": "string"},
+          "system_prompt": {"description": "New system prompt text", "title": "System Prompt", "type": "string"}
         },
-        "required": [
-          "bot_name",
-          "system_prompt"
-        ],
+        "required": ["bot_name", "system_prompt"],
         "title": "SetPromptParams",
         "type": "object"
       },
@@ -220,24 +197,16 @@
     },
     {
       "name": "relink_bot",
-      "description": "Re-generate QR code and linking code for a bot (e.g. after changing Telegram account).",
+      "description": "Re-generate QR code and linking code for a bot.",
       "action_type": "write",
       "chain_callable": true,
-      "effects": [
-        "update:bot"
-      ],
+      "effects": ["update:bot"],
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "bot_name": {
-            "description": "Bot name to act on",
-            "title": "Bot Name",
-            "type": "string"
-          }
+          "bot_name": {"description": "Bot name to act on", "title": "Bot Name", "type": "string"}
         },
-        "required": [
-          "bot_name"
-        ],
+        "required": ["bot_name"],
         "title": "BotNameParams",
         "type": "object"
       },
@@ -248,48 +217,20 @@
     },
     {
       "name": "add_schedule",
-      "description": "Add a scheduled notification to a bot. task_type: 'analytics_daily' (daily traffic), 'analytics_weekly' (weekly report), 'custom_message' (fixed text). cron_expr examples: '0 8 * * *' = 8am daily, '0 9 * * 1' = 9am every Monday.",
+      "description": "Add a scheduled notification to a bot.",
       "action_type": "write",
       "chain_callable": true,
-      "effects": [
-        "create:schedule"
-      ],
+      "effects": ["create:schedule"],
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "bot_name": {
-            "description": "Bot name to add schedule to",
-            "title": "Bot Name",
-            "type": "string"
-          },
-          "description": {
-            "description": "Human-readable description of the schedule",
-            "title": "Description",
-            "type": "string"
-          },
-          "cron_expr": {
-            "description": "Cron expression, e.g. '0 8 * * *' for 8am daily",
-            "title": "Cron Expr",
-            "type": "string"
-          },
-          "task_type": {
-            "description": "'analytics_daily' | 'analytics_weekly' | 'custom_message'",
-            "title": "Task Type",
-            "type": "string"
-          },
-          "message": {
-            "default": "",
-            "description": "Message text for custom_message task type",
-            "title": "Message",
-            "type": "string"
-          }
+          "bot_name": {"description": "Bot name", "title": "Bot Name", "type": "string"},
+          "description": {"description": "Human-readable description", "title": "Description", "type": "string"},
+          "cron_expr": {"description": "Cron expression, e.g. '0 8 * * *'", "title": "Cron Expr", "type": "string"},
+          "task_type": {"description": "'analytics_daily' | 'analytics_weekly' | 'custom_message'", "title": "Task Type", "type": "string"},
+          "message": {"default": "", "description": "Message text for custom_message", "title": "Message", "type": "string"}
         },
-        "required": [
-          "bot_name",
-          "description",
-          "cron_expr",
-          "task_type"
-        ],
+        "required": ["bot_name", "description", "cron_expr", "task_type"],
         "title": "AddScheduleParams",
         "type": "object"
       },
@@ -303,21 +244,13 @@
       "description": "Remove a scheduled notification by schedule ID.",
       "action_type": "destructive",
       "chain_callable": true,
-      "effects": [
-        "delete:schedule"
-      ],
+      "effects": ["delete:schedule"],
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "schedule_id": {
-            "description": "Schedule UUID to remove",
-            "title": "Schedule Id",
-            "type": "string"
-          }
+          "schedule_id": {"description": "Schedule UUID to remove", "title": "Schedule Id", "type": "string"}
         },
-        "required": [
-          "schedule_id"
-        ],
+        "required": ["schedule_id"],
         "title": "RemoveScheduleParams",
         "type": "object"
       },
@@ -335,15 +268,9 @@
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "bot_name": {
-            "description": "Bot name to act on",
-            "title": "Bot Name",
-            "type": "string"
-          }
+          "bot_name": {"description": "Bot name to act on", "title": "Bot Name", "type": "string"}
         },
-        "required": [
-          "bot_name"
-        ],
+        "required": ["bot_name"],
         "title": "BotNameParams",
         "type": "object"
       },
@@ -354,50 +281,18 @@
     },
     {
       "name": "send_message",
-      "description": "Send a message via a Telegram bot to its owner. Use when user asks to send a notification or test the bot. bot_name optional — uses default bot if not specified.",
+      "description": "Send a message via a Telegram bot to its owner.",
       "action_type": "write",
       "chain_callable": true,
-      "effects": [
-        "send:message"
-      ],
+      "effects": ["send:message"],
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "text": {
-            "description": "Message text to send",
-            "title": "Text",
-            "type": "string"
-          },
-          "bot_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Bot name — uses default if not specified",
-            "title": "Bot Name"
-          },
-          "chat_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Target chat ID — uses owner_chat_id if not specified",
-            "title": "Chat Id"
-          }
+          "text": {"description": "Message text to send", "title": "Text", "type": "string"},
+          "bot_name": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null, "title": "Bot Name"},
+          "chat_id": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null, "title": "Chat Id"}
         },
-        "required": [
-          "text"
-        ],
+        "required": ["text"],
         "title": "SendMessageParams",
         "type": "object"
       },
@@ -411,27 +306,14 @@
       "description": "Send a test message via a bot to verify it is working.",
       "action_type": "write",
       "chain_callable": true,
-      "effects": [
-        "send:message"
-      ],
+      "effects": ["send:message"],
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "bot_name": {
-            "description": "Bot name to test",
-            "title": "Bot Name",
-            "type": "string"
-          },
-          "message": {
-            "default": "Тест! Бот работает.",
-            "description": "Test message to send",
-            "title": "Message",
-            "type": "string"
-          }
+          "bot_name": {"description": "Bot name to test", "title": "Bot Name", "type": "string"},
+          "message": {"default": "Тест! Бот работает.", "description": "Test message", "title": "Message", "type": "string"}
         },
-        "required": [
-          "bot_name"
-        ],
+        "required": ["bot_name"],
         "title": "TestBotParams",
         "type": "object"
       },
@@ -442,28 +324,14 @@
     },
     {
       "name": "save_settings",
-      "description": "Save TG Bot Builder settings (e.g. default bot ID for IPC).",
+      "description": "Save TG Bot Builder settings.",
       "action_type": "write",
       "chain_callable": true,
-      "effects": [
-        "update:settings"
-      ],
+      "effects": ["update:settings"],
       "id_projection": "",
       "params_schema": {
         "properties": {
-          "default_bot_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Default bot ID for IPC notifications",
-            "title": "Default Bot Id"
-          }
+          "default_bot_id": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null, "title": "Default Bot Id"}
         },
         "title": "SaveSettingsParams",
         "type": "object"
@@ -480,11 +348,7 @@
       "chain_callable": false,
       "effects": [],
       "id_projection": "",
-      "params_schema": {
-        "properties": {},
-        "title": "EmptyParams",
-        "type": "object"
-      },
+      "params_schema": {"properties": {}, "title": "EmptyParams", "type": "object"},
       "return_schema": {},
       "event": "",
       "scopes": [],
@@ -492,25 +356,13 @@
     },
     {
       "name": "__webhook__/tg-message",
-      "description": "Webbee mode: receive inbound Telegram message with full ctx access. Only processes messages from bot owner.",
+      "description": "Webbee mode: receive inbound Telegram message with full ctx access.",
       "scopes": [],
       "parameters": {
-        "bot_id": {
-          "type": "string",
-          "required": false
-        },
-        "chat_id": {
-          "type": "string",
-          "required": false
-        },
-        "owner_chat_id": {
-          "type": "string",
-          "required": false
-        },
-        "text": {
-          "type": "string",
-          "required": false
-        }
+        "bot_id": {"type": "string", "required": false},
+        "chat_id": {"type": "string", "required": false},
+        "owner_chat_id": {"type": "string", "required": false},
+        "text": {"type": "string", "required": false}
       }
     }
   ],
@@ -519,21 +371,12 @@
   "required_scopes": [],
   "icon_size_bytes": 207,
   "webhooks": [
-    {
-      "path": "/tg-message",
-      "method": "POST",
-      "secret_header": ""
-    }
+    {"path": "/tg-message", "method": "POST", "secret_header": ""}
   ],
   "exposed": [
-    {
-      "name": "send_message",
-      "action_type": "read"
-    }
+    {"name": "send_message", "action_type": "read"}
   ],
   "lifecycle": {
-    "health_check": {
-      "interval_sec": 60
-    }
+    "health_check": {"interval_sec": 60}
   }
 }
