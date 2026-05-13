@@ -6,7 +6,7 @@ from imperal_sdk.types import ActionResult  # noqa: F811
 
 from app import chat, ext, load_settings
 from params import SendMessageParams, TestBotParams
-from api_client import mos_send_message, mos_list_bots
+from tgbot_api import mos_send_message, mos_list_bots
 
 
 @chat.function(
@@ -22,7 +22,6 @@ from api_client import mos_send_message, mos_list_bots
     event="tgbot.message.sent",
 )
 async def fn_send_message(ctx, params: SendMessageParams) -> ActionResult:
-    """Send message via named bot (or default/first active bot)."""
     bot_id = None
     bot_name = params.bot_name
 
@@ -52,7 +51,6 @@ async def fn_send_message(ctx, params: SendMessageParams) -> ActionResult:
 
 @ext.expose("send_message")
 async def ipc_send_message(ctx, text: str, bot_name: str = None, chat_id: str = None) -> dict:
-    """IPC: other extensions call ctx.extensions.call('tg-bot', 'send_message', ...)"""
     params = SendMessageParams(text=text, bot_name=bot_name, chat_id=chat_id)
     result = await fn_send_message(ctx, params)
     return {"ok": result.status == "success", "error": getattr(result, "error", None)}
@@ -67,7 +65,6 @@ async def ipc_send_message(ctx, text: str, bot_name: str = None, chat_id: str = 
     event="tgbot.message.sent",
 )
 async def fn_test_bot(ctx, params: TestBotParams) -> ActionResult:
-    """Send test message via named bot."""
     result = await mos_send_message(ctx, bot_name=params.bot_name, text=params.message)
     if "error" in result:
         return ActionResult.error(error=result["error"])
@@ -76,7 +73,6 @@ async def fn_test_bot(ctx, params: TestBotParams) -> ActionResult:
 
 @ext.webhook("/tg-message")
 async def handle_tg_message(ctx, data: dict) -> dict:
-    """Webbee mode: inbound Telegram message with full ctx access. Only responds to owner."""
     if data.get("chat_id") != data.get("owner_chat_id"):
         return {"ok": True}
 
