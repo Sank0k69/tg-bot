@@ -489,6 +489,29 @@
       "event": "",
       "scopes": [],
       "owner_chat_tool": "tg_bot"
+    },
+    {
+      "name": "__webhook__/tg-message",
+      "description": "Webbee mode: receive inbound Telegram message with full ctx access. Only processes messages from bot owner.",
+      "scopes": [],
+      "parameters": {
+        "bot_id": {
+          "type": "string",
+          "required": false
+        },
+        "chat_id": {
+          "type": "string",
+          "required": false
+        },
+        "owner_chat_id": {
+          "type": "string",
+          "required": false
+        },
+        "text": {
+          "type": "string",
+          "required": false
+        }
+      }
     }
   ],
   "signals": [],
