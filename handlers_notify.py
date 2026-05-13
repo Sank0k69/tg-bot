@@ -77,9 +77,10 @@ async def handle_tg_message(ctx, headers: dict, body: str, query_params: dict) -
     import json as _json
     import os as _os
 
-    # Verify shared secret from MOS
+    # Verify shared secret from MOS (headers may be lowercased by Imperal)
     expected = _os.environ.get("WEBBEE_WEBHOOK_SECRET", "imperal-tgbot-secret")
-    if headers.get("X-Webbee-Secret", "") != expected:
+    incoming = headers.get("X-Webbee-Secret") or headers.get("x-webbee-secret") or ""
+    if incoming != expected:
         return {"ok": False, "error": "unauthorized"}
 
     try:
