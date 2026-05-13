@@ -1,5 +1,3 @@
-# This module was renamed to tgbot_api.py to avoid shared environment naming conflicts.
-# Intentionally raises ImportError to prevent accidental imports.
-raise ImportError(
-    "api_client was renamed to tgbot_api. Use: from tgbot_api import ..."
-)
+# This module was renamed to tgbot_api.py
+# Kept as empty placeholder to avoid shared-env path conflicts.
+# Import nothing from here — use tgbot_api instead.
