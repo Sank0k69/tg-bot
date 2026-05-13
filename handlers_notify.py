@@ -6,7 +6,7 @@ from imperal_sdk.types import ActionResult  # noqa: F811
 
 from app import chat, ext, load_settings
 from params import SendMessageParams, TestBotParams
-from tgbot_api import mos_send_message, mos_list_bots
+from tgbot_api import mos_send_message, mos_list_bots, SERVER_URL, SERVER_API_KEY
 
 
 @chat.function(
@@ -72,22 +72,66 @@ async def fn_test_bot(ctx, params: TestBotParams) -> ActionResult:
 
 
 @ext.webhook("/tg-message")
-async def handle_tg_message(ctx, data: dict) -> dict:
-    if data.get("chat_id") != data.get("owner_chat_id"):
-        return {"ok": True}
+async def handle_tg_message(ctx, headers: dict, body: str, query_params: dict) -> dict:
+    """Webbee mode: receive TG message from MOS, process with AI, send reply."""
+    import json as _json
+    import os as _os
 
-    text = data.get("text", "")
-    bot_id = data.get("bot_id", "")
-    chat_id = data.get("chat_id", "")
-
-    if not text or not bot_id or not chat_id:
-        return {"ok": True}
+    # Verify shared secret from MOS
+    expected = _os.environ.get("WEBBEE_WEBHOOK_SECRET", "imperal-tgbot-secret")
+    if headers.get("X-Webbee-Secret", "") != expected:
+        return {"ok": False, "error": "unauthorized"}
 
     try:
-        reply = await ctx.ai.complete(prompt=text, model="claude-haiku-4-5-20251001")
-        reply_text = reply.text if hasattr(reply, "text") else str(reply)
+        data = _json.loads(body) if isinstance(body, str) else body
     except Exception:
-        reply_text = "Could not generate a response."
+        return {"ok": True}
 
-    await mos_send_message(ctx, bot_id=bot_id, chat_id=chat_id, text=reply_text)
+    chat_id = data.get("chat_id", "")
+    text = data.get("text", "")
+    bot_id = data.get("bot_id", "")
+    token = data.get("token", "")  # decrypted token passed from MOS
+
+    if not chat_id or not text or not bot_id:
+        return {"ok": True}
+
+    # Generate AI reply via MOS (ctx.http works in webhook context; ctx.ai may not)
+    reply_text = "Не удалось сформировать ответ."
+    try:
+        resp = await ctx.http.post(
+            f"{SERVER_URL}/api/content/generate",
+            json={
+                "topic": text,
+                "keyword": "",
+                "language": "ru",
+                "word_count": 200,
+                "article_type": "custom",
+                "brand_voice": "Кратко и по делу. Отвечай на вопрос напрямую.",
+                "system_prompt_override": (
+                    "Ты личный ассистент владельца бизнеса. "
+                    "Отвечай кратко (1-3 предложения), по-русски, по делу. "
+                    "Это сообщение в Telegram — не статья, не эссе."
+                ),
+            },
+            headers={"X-API-Key": SERVER_API_KEY},
+            timeout=25,
+        )
+        if resp.ok:
+            result = resp.json()
+            reply_text = result.get("content", reply_text)[:1000]
+    except Exception as e:
+        print(f"[webbee-webhook] AI call failed: {e}")
+
+    # Send reply via Telegram directly (token available from payload)
+    if token:
+        try:
+            import httpx as _httpx
+            async with _httpx.AsyncClient(timeout=10) as client:
+                await client.post(
+                    f"https://api.telegram.org/bot{token}/sendMessage",
+                    json={"chat_id": chat_id, "text": reply_text, "parse_mode": "HTML"},
+                )
+        except Exception as e:
+            print(f"[webbee-webhook] TG send failed: {e}")
+
     return {"ok": True}
