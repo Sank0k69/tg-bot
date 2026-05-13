@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from imperal_sdk import ui
-from app import ext, get_cached_bots, set_current_bot
+from app import ext, get_cached_bots
 from tgbot_api import mos_list_schedules
 
 NAV_COLLECTION = "tgbot_nav"
@@ -50,11 +50,7 @@ def _step1_view() -> ui.UINode:
             ]),
         ]),
         ui.Divider(),
-        ui.Form(
-            action="show_step2_form",
-            children=[],
-            submit_label="Есть токен — настроить бота →",
-        ),
+        ui.Form(action="show_step2_form", children=[], submit_label="Есть токен — настроить бота →"),
     ])
 
 
@@ -65,14 +61,8 @@ def _step2_view() -> ui.UINode:
             action="create_bot",
             submit_label="Создать бота 🚀",
             children=[
-                ui.Input(
-                    param_name="token",
-                    placeholder="Токен от @BotFather (1234567890:AAABBB...)",
-                ),
-                ui.Input(
-                    param_name="name",
-                    placeholder="Название бота (для тебя, любое)",
-                ),
+                ui.Input(param_name="token", placeholder="Токен от @BotFather (1234567890:AAABBB...)"),
+                ui.Input(param_name="name", placeholder="Название бота (для тебя, любое)"),
                 ui.TextArea(
                     param_name="system_prompt",
                     placeholder=(
@@ -84,11 +74,7 @@ def _step2_view() -> ui.UINode:
                 ),
             ],
         ),
-        ui.Form(
-            action="show_create_form",
-            children=[],
-            submit_label="← Назад",
-        ),
+        ui.Form(action="show_create_form", children=[], submit_label="← Назад"),
     ])
 
 
@@ -97,24 +83,16 @@ def _unlinked_view(bot: dict) -> ui.UINode:
     qr = bot.get("qr_base64", "")
     children = [
         ui.Header(text="Бот создан! Теперь открой его в Telegram."),
-        ui.Alert(
-            type="success",
-            message="Отсканируй QR или нажми ссылку → нажми START → бот активирован.",
-        ),
+        ui.Alert(type="success", message="Отсканируй QR или нажми ссылку → нажми START → бот активирован."),
     ]
     if qr:
         children.append(ui.Image(src=f"data:image/png;base64,{qr}", alt="QR бота", width=200))
     if invite_link:
         children.append(ui.Text(content=f"Ссылка: {invite_link}"))
-    children.append(
-        ui.Alert(
-            type="info",
-            message=(
-                "После START — пиши боту в Telegram. "
-                "Здесь, в Imperal, можешь управлять промптом и расписаниями."
-            ),
-        ),
-    )
+    children.append(ui.Alert(
+        type="info",
+        message="После START — пиши боту в Telegram. Здесь управляй промптом и расписаниями.",
+    ))
     return ui.Stack(children=children)
 
 
@@ -126,35 +104,32 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
     else:
         status = "Disabled"
 
+    bot_name = bot["name"]
+
     sched_items = []
     for s in schedules:
-        sched_items.append(
-            ui.Stack(direction="row", children=[
-                ui.Text(content=f"{s['cron_expr']}  {s['description']}  ({s['task_type']})"),
-                ui.Form(
-                    action="remove_schedule",
-                    children=[ui.Input(param_name="schedule_id", placeholder=s["id"])],
-                    submit_label="✕",
-                ),
-            ])
-        )
+        sched_items.append(ui.Stack(direction="row", children=[
+            ui.Text(content=f"{s['cron_expr']}  {s['description']}  ({s['task_type']})"),
+            ui.Form(
+                action="remove_schedule",
+                children=[ui.Input(param_name="schedule_id", value=s["id"])],
+                submit_label="✕",
+            ),
+        ]))
 
     return ui.Stack(children=[
         ui.Stack(direction="row", children=[
-            ui.Header(text=f"{bot['name']}"),
-            ui.Badge(
-                label=status,
-                color="green" if bot.get("owner_chat_id") and bot.get("enabled") else
-                       "orange" if not bot.get("owner_chat_id") else "red",
-            ),
+            ui.Header(text=bot_name),
+            ui.Badge(label=status, color="green" if bot.get("owner_chat_id") and bot.get("enabled") else
+                     "orange" if not bot.get("owner_chat_id") else "red"),
             ui.Form(
                 action="disable_bot" if bot.get("enabled") else "enable_bot",
-                children=[],
+                children=[ui.Input(param_name="bot_name", value=bot_name)],
                 submit_label="Отключить" if bot.get("enabled") else "Включить",
             ),
             ui.Form(
                 action="delete_bot",
-                children=[],
+                children=[ui.Input(param_name="bot_name", value=bot_name)],
                 submit_label="Удалить",
             ),
         ]),
@@ -166,6 +141,7 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                 action="set_prompt",
                 submit_label="Обновить промпт",
                 children=[
+                    ui.Input(param_name="bot_name", value=bot_name),
                     ui.TextArea(param_name="system_prompt", placeholder="Новый промпт..."),
                 ],
             ),
@@ -177,11 +153,11 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                 action="add_schedule",
                 submit_label="+ Добавить",
                 children=[
+                    ui.Input(param_name="bot_name", value=bot_name),
                     ui.Input(param_name="description", placeholder="Описание"),
                     ui.Input(param_name="cron_expr", placeholder="Cron: 0 8 * * *"),
                     ui.Select(
-                        param_name="task_type",
-                        placeholder="Тип",
+                        param_name="task_type", placeholder="Тип",
                         options=[
                             {"value": "analytics_daily", "label": "Трафик за сутки"},
                             {"value": "analytics_weekly", "label": "Недельный отчёт"},
@@ -196,15 +172,16 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
         ui.Section(title="Тест и управление", collapsible=True, children=[
             ui.Form(
                 action="test_bot",
-                children=[],
+                children=[ui.Input(param_name="bot_name", value=bot_name)],
                 submit_label="Отправить тестовое сообщение",
             ),
             ui.Form(
                 action="relink_bot",
-                children=[],
+                children=[ui.Input(param_name="bot_name", value=bot_name)],
                 submit_label="Перепривязать (новый QR)",
             ),
         ]),
+        ui.Form(action="show_create_form", children=[], submit_label="← К списку ботов"),
     ])
 
 
@@ -242,7 +219,6 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
     if active_view == "detail" and selected_bot_id:
         bot = next((b for b in bots if b["id"] == selected_bot_id), None)
         if bot:
-            await set_current_bot(ctx, bot["name"])
             schedules = await mos_list_schedules(ctx, selected_bot_id)
             return _detail_view(bot, schedules)
 
@@ -260,7 +236,7 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
             ),
             ui.Form(
                 action="open_bot_detail",
-                children=[ui.Input(param_name="bot_id", placeholder=b["id"])],
+                children=[ui.Input(param_name="bot_id", value=b["id"])],
                 submit_label="Открыть",
             ),
         ])
