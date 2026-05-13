@@ -33,13 +33,23 @@ def _bot_status(bot: dict) -> str:
 
 @chat.function(
     "show_create_form",
-    description="Navigate to bot creation form in the panel.",
+    description="Navigate to bot creation wizard step 1 (BotFather instructions).",
     action_type="read",
     event="tgbot.nav_create",
 )
 async def fn_show_create_form(ctx, params: EmptyParams) -> ActionResult:
-    """Store nav state so main panel renders create view on next refresh."""
     await _set_nav(ctx, "create")
+    return ActionResult.success({}, summary="")
+
+
+@chat.function(
+    "show_step2_form",
+    description="Navigate to bot creation wizard step 2 (token input form).",
+    action_type="read",
+    event="tgbot.nav_step2",
+)
+async def fn_show_step2_form(ctx, params: EmptyParams) -> ActionResult:
+    await _set_nav(ctx, "step2")
     return ActionResult.success({}, summary="")
 
 
@@ -50,7 +60,6 @@ async def fn_show_create_form(ctx, params: EmptyParams) -> ActionResult:
     event="tgbot.nav_detail",
 )
 async def fn_open_bot_detail(ctx, params: BotIdParams) -> ActionResult:
-    """Store nav state so main panel renders bot detail view."""
     await _set_nav(ctx, f"detail:{params.bot_id}")
     return ActionResult.success({}, summary="")
 
@@ -62,7 +71,6 @@ async def fn_open_bot_detail(ctx, params: BotIdParams) -> ActionResult:
     event="tgbot.listed",
 )
 async def fn_list_bots(ctx, params: EmptyParams) -> ActionResult:
-    """Show all user bots with status."""
     bots = await get_cached_bots(ctx)
     rows = [
         {"name": b["name"], "mode": b.get("mode", "standalone"),
@@ -79,9 +87,8 @@ async def fn_list_bots(ctx, params: EmptyParams) -> ActionResult:
 @chat.function(
     "create_bot",
     description=(
-        "Create a new Telegram bot. Requires: name, token from @BotFather, system_prompt. "
-        "mode: 'standalone' (custom AI) or 'webbee' (full Imperal access). "
-        "owner_tg_id optional — alternative to QR linking."
+        "Create a new Telegram bot. Requires: name, token from @BotFather. "
+        "mode defaults to standalone. owner_tg_id optional."
     ),
     action_type="write",
     chain_callable=True,
@@ -89,7 +96,6 @@ async def fn_list_bots(ctx, params: EmptyParams) -> ActionResult:
     event="tgbot.created",
 )
 async def fn_create_bot(ctx, params: CreateBotParams) -> ActionResult:
-    """Create bot on MOS, register Telegram webhook, return QR + invite link."""
     if not params.token:
         return ActionResult.error(error="Token required — get it from @BotFather in Telegram.")
     result = await mos_create_bot(
@@ -103,8 +109,8 @@ async def fn_create_bot(ctx, params: CreateBotParams) -> ActionResult:
         result,
         summary=(
             f"Bot '{params.name}' created! @{result.get('bot_username', '')}\n"
-            f"Scan QR in panel or open link:\n{result.get('invite_link', '')}\n"
-            f"Press START in Telegram to link the bot."
+            f"Scan QR in panel or open: {result.get('invite_link', '')}\n"
+            f"Press START in Telegram to link."
         ),
     )
 
@@ -118,7 +124,6 @@ async def fn_create_bot(ctx, params: CreateBotParams) -> ActionResult:
     event="tgbot.deleted",
 )
 async def fn_delete_bot(ctx, params: BotNameParams) -> ActionResult:
-    """Delete bot by name."""
     bots = await get_cached_bots(ctx)
     bot = next((b for b in bots if b["name"] == params.bot_name), None)
     if not bot:
@@ -137,7 +142,6 @@ async def fn_delete_bot(ctx, params: BotNameParams) -> ActionResult:
     event="tgbot.updated",
 )
 async def fn_enable_bot(ctx, params: BotNameParams) -> ActionResult:
-    """Enable bot by name."""
     bots = await get_cached_bots(ctx)
     bot = next((b for b in bots if b["name"] == params.bot_name), None)
     if not bot:
@@ -156,7 +160,6 @@ async def fn_enable_bot(ctx, params: BotNameParams) -> ActionResult:
     event="tgbot.updated",
 )
 async def fn_disable_bot(ctx, params: BotNameParams) -> ActionResult:
-    """Disable bot by name."""
     bots = await get_cached_bots(ctx)
     bot = next((b for b in bots if b["name"] == params.bot_name), None)
     if not bot:
@@ -175,7 +178,6 @@ async def fn_disable_bot(ctx, params: BotNameParams) -> ActionResult:
     event="tgbot.updated",
 )
 async def fn_set_prompt(ctx, params: SetPromptParams) -> ActionResult:
-    """Change bot system prompt."""
     bots = await get_cached_bots(ctx)
     bot = next((b for b in bots if b["name"] == params.bot_name), None)
     if not bot:
@@ -187,14 +189,13 @@ async def fn_set_prompt(ctx, params: SetPromptParams) -> ActionResult:
 
 @chat.function(
     "relink_bot",
-    description="Re-generate QR code and linking code for a bot (e.g. after changing Telegram account).",
+    description="Re-generate QR code and linking code for a bot.",
     action_type="write",
     chain_callable=True,
     effects=["update:bot"],
     event="tgbot.updated",
 )
 async def fn_relink_bot(ctx, params: BotNameParams) -> ActionResult:
-    """Generate new link_code, clear owner_chat_id."""
     bots = await get_cached_bots(ctx)
     bot = next((b for b in bots if b["name"] == params.bot_name), None)
     if not bot:
@@ -203,8 +204,5 @@ async def fn_relink_bot(ctx, params: BotNameParams) -> ActionResult:
     await invalidate_bots_cache(ctx)
     return ActionResult.success(
         result,
-        summary=(
-            f"New link for '{params.bot_name}':\n"
-            f"{result.get('invite_link', '')}\nQR updated in panel."
-        ),
+        summary=f"New link for '{params.bot_name}':\n{result.get('invite_link', '')}\nQR updated.",
     )
