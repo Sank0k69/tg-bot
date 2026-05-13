@@ -225,26 +225,29 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
     if not bots:
         return _step1_view()
 
-    rows = [
-        ui.Stack(direction="row", children=[
-            ui.Text(content=b["name"]),
-            ui.Badge(
+    # Use ui.List+ListItem with static Call params — ui.Input value= doesn't submit in Forms
+    list_items = [
+        ui.ListItem(
+            id=b["id"],
+            title=b["name"],
+            subtitle=(
+                "Active" if b.get("owner_chat_id") and b.get("enabled") else
+                "Unlinked" if not b.get("owner_chat_id") else "Disabled"
+            ),
+            badge=ui.Badge(
                 label="Active" if b.get("owner_chat_id") and b.get("enabled") else
                        "Unlinked" if not b.get("owner_chat_id") else "Disabled",
                 color="green" if b.get("owner_chat_id") and b.get("enabled") else
                        "orange" if not b.get("owner_chat_id") else "red",
             ),
-            ui.Form(
-                action="open_bot_detail",
-                children=[ui.Input(param_name="bot_id", value=b["id"])],
-                submit_label="Открыть",
-            ),
-        ])
+            on_click=ui.Call("open_bot_detail", bot_id=b["id"]),
+        )
         for b in bots
     ]
+
     return ui.Stack(children=[
         ui.Header(text="Мои боты"),
         ui.Form(action="show_create_form", children=[], submit_label="+ Создать бота"),
         ui.Divider(),
-        *rows,
+        ui.List(items=list_items),
     ])
