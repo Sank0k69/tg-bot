@@ -181,7 +181,8 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                 submit_label="Перепривязать (новый QR)",
             ),
         ]),
-        ui.Form(action="show_create_form", children=[], submit_label="← К списку ботов"),
+        # Back button uses show_bot_list (not show_create_form) to navigate to bot list
+        ui.Form(action="show_bot_list", children=[], submit_label="← К списку ботов"),
     ])
 
 
@@ -190,7 +191,7 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
     slot="center",
     title="TG Bot Builder",
     icon="MessageCircle",
-    refresh="on_event:tgbot.created,tgbot.deleted,tgbot.updated,tgbot.listed,tgbot.nav_create,tgbot.nav_step2,tgbot.nav_detail",
+    refresh="on_event:tgbot.created,tgbot.deleted,tgbot.updated,tgbot.listed,tgbot.nav_create,tgbot.nav_step2,tgbot.nav_detail,tgbot.nav_list",
 )
 async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None,
                      note_id: str = None):
@@ -207,6 +208,7 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
         if bot:
             schedules = await mos_list_schedules(ctx, bot_id)
             return _detail_view(bot, schedules)
+    # nav_view == "" → fall through to bot list
 
     if active_view == "create":
         return _step1_view()
@@ -225,7 +227,6 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
     if not bots:
         return _step1_view()
 
-    # Use ui.List+ListItem with static Call params — ui.Input value= doesn't submit in Forms
     list_items = [
         ui.ListItem(
             id=b["id"],
