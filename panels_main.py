@@ -28,20 +28,27 @@ async def _get_nav_view(ctx) -> str:
     return ""
 
 
-# ── Wizard step 1 ────────────────────────────────────────────────────────────
+# ── Wizard step 1: explain + BotFather QR ────────────────────────────────────
 
 def _step1_view() -> ui.UINode:
     return ui.Stack(children=[
-        ui.Header(text="Создать Telegram-бота"),
-        ui.Alert(type="info", message="Займёт 2 минуты. Просто следуй шагам."),
+        ui.Header(text="Создать своего Telegram-бота"),
+        ui.Alert(
+            type="info",
+            message=(
+                "Бот живёт в Telegram — пишешь ему как другу, он отвечает через AI. "
+                "Можешь настроить: что он знает, что умеет, что присылает по расписанию."
+            ),
+        ),
         ui.Divider(),
+        ui.Text(content="Шаг 1 — Получи токен в Telegram"),
         ui.Stack(direction="row", children=[
             ui.Image(src=_BOTFATHER_QR, alt="QR BotFather", width=160),
             ui.Stack(children=[
-                ui.Text(content="1. Отсканируй QR или открой @BotFather в Telegram"),
-                ui.Text(content="2. Отправь команду /newbot"),
-                ui.Text(content="3. Введи любое имя для бота"),
-                ui.Text(content="4. Скопируй токен — он выглядит так:"),
+                ui.Text(content="1. Отсканируй QR → откроется @BotFather"),
+                ui.Text(content="2. Отправь /newbot"),
+                ui.Text(content="3. Придумай имя боту"),
+                ui.Text(content="4. Скопируй токен:"),
                 ui.Text(content="   1234567890:AABBBCCC_abc..."),
             ]),
         ]),
@@ -49,28 +56,36 @@ def _step1_view() -> ui.UINode:
         ui.Form(
             action="show_step2_form",
             children=[],
-            submit_label="У меня есть токен →",
+            submit_label="Есть токен — настроить бота →",
         ),
     ])
 
 
-# ── Wizard step 2 ────────────────────────────────────────────────────────────
+# ── Wizard step 2: token + name + prompt ─────────────────────────────────────
 
 def _step2_view() -> ui.UINode:
     return ui.Stack(children=[
-        ui.Header(text="Подключить бота"),
-        ui.Text(content="Вставь токен, который дал @BotFather:"),
+        ui.Header(text="Настроить бота"),
         ui.Form(
             action="create_bot",
             submit_label="Создать бота 🚀",
             children=[
                 ui.Input(
                     param_name="token",
-                    placeholder="Вставь токен сюда (1234567890:AAABBB...)",
+                    placeholder="Токен от @BotFather (1234567890:AAABBB...)",
                 ),
                 ui.Input(
                     param_name="name",
                     placeholder="Название бота (для тебя, любое)",
+                ),
+                ui.TextArea(
+                    param_name="system_prompt",
+                    placeholder=(
+                        "Чем занимается бот? Например:\n"
+                        "«Ты маркетинг-ассистент. Отвечай на вопросы по трафику сайта, "
+                        "SEO позициям и контент-плану.»\n\n"
+                        "Если пусто — бот будет универсальным помощником."
+                    ),
                 ),
             ],
         ),
@@ -82,21 +97,30 @@ def _step2_view() -> ui.UINode:
     ])
 
 
-# ── After creation: unlinked ─────────────────────────────────────────────────
+# ── After creation: unlinked (scan QR to activate) ───────────────────────────
 
 def _unlinked_view(bot: dict) -> ui.UINode:
     invite_link = bot.get("invite_link", "")
     qr = bot.get("qr_base64", "")
     children = [
-        ui.Header(text="Бот создан! Теперь подключи его к себе."),
-        ui.Alert(type="success", message="Отсканируй QR в Telegram → нажми START. Готово!"),
+        ui.Header(text="Бот создан! Теперь открой его в Telegram."),
+        ui.Alert(
+            type="success",
+            message="Отсканируй QR или нажми ссылку → нажми START → бот активирован.",
+        ),
     ]
     if qr:
-        children.append(ui.Image(src=f"data:image/png;base64,{qr}", alt="QR", width=200))
+        children.append(ui.Image(src=f"data:image/png;base64,{qr}", alt="QR бота", width=200))
     if invite_link:
-        children.append(ui.Text(content=f"Или открой: {invite_link}"))
+        children.append(ui.Text(content=f"Ссылка: {invite_link}"))
     children.append(
-        ui.Alert(type="info", message="Панель обновится автоматически после подключения."),
+        ui.Alert(
+            type="info",
+            message=(
+                "После START — пиши боту в Telegram. "
+                "Здесь, в Imperal, можешь управлять промптом и расписаниями."
+            ),
+        ),
     )
     return ui.Stack(children=children)
 
@@ -107,7 +131,7 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
     if bot.get("owner_chat_id") and bot.get("enabled"):
         status = "Active"
     elif not bot.get("owner_chat_id"):
-        status = "Unlinked"
+        status = "Unlinked — нажми START в боте"
     else:
         status = "Disabled"
 
@@ -126,7 +150,12 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
 
     return ui.Stack(children=[
         ui.Stack(direction="row", children=[
-            ui.Header(text=f"{bot['name']}  [{status}]"),
+            ui.Header(text=f"{bot['name']}"),
+            ui.Badge(
+                label=status,
+                color="green" if bot.get("owner_chat_id") and bot.get("enabled") else
+                       "orange" if not bot.get("owner_chat_id") else "red",
+            ),
             ui.Form(
                 action="disable_bot" if bot.get("enabled") else "enable_bot",
                 children=[ui.Input(param_name="bot_name", placeholder=bot["name"])],
@@ -138,10 +167,10 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                 submit_label="Удалить",
             ),
         ]),
-        ui.Text(content=f"@{bot.get('bot_username', '')} | Режим: {bot.get('mode', 'standalone')}"),
+        ui.Text(content=f"@{bot.get('bot_username', '')} · Режим: {bot.get('mode', 'standalone')}"),
         ui.Divider(),
         ui.Section(title="Системный промпт", collapsible=True, children=[
-            ui.Text(content=bot.get("system_prompt") or "(не задан)"),
+            ui.Text(content=bot.get("system_prompt") or "(не задан — универсальный ассистент)"),
             ui.Form(
                 action="set_prompt",
                 submit_label="Обновить промпт",
@@ -152,18 +181,18 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
             ),
         ]),
         ui.Divider(),
-        ui.Section(title="Расписания", collapsible=True, children=[
+        ui.Section(title="Расписания (авто-отчёты)", collapsible=True, children=[
             *sched_items,
             ui.Form(
                 action="add_schedule",
-                submit_label="+ Добавить расписание",
+                submit_label="+ Добавить",
                 children=[
                     ui.Input(param_name="bot_name", placeholder=bot["name"]),
-                    ui.Input(param_name="description", placeholder="Описание задачи"),
+                    ui.Input(param_name="description", placeholder="Описание"),
                     ui.Input(param_name="cron_expr", placeholder="Cron: 0 8 * * *"),
                     ui.Select(
                         param_name="task_type",
-                        placeholder="Тип задачи",
+                        placeholder="Тип",
                         options=[
                             {"value": "analytics_daily", "label": "Трафик за сутки"},
                             {"value": "analytics_weekly", "label": "Недельный отчёт"},
@@ -184,7 +213,7 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
             ui.Form(
                 action="relink_bot",
                 children=[ui.Input(param_name="bot_name", placeholder=bot["name"])],
-                submit_label="Перепривязать бота",
+                submit_label="Перепривязать (новый QR)",
             ),
         ]),
     ])
@@ -204,7 +233,6 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
     """Center panel: guided wizard / detail / list views."""
     bots = await get_cached_bots(ctx)
 
-    # Store-based navigation from sidebar / back buttons
     nav_view = await _get_nav_view(ctx)
     if nav_view == "create":
         return _step1_view()
@@ -217,7 +245,6 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
             schedules = await mos_list_schedules(ctx, bot_id)
             return _detail_view(bot, schedules)
 
-    # URL param navigation
     if active_view == "create":
         return _step1_view()
     if active_view == "step2":
@@ -232,11 +259,9 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
             schedules = await mos_list_schedules(ctx, selected_bot_id)
             return _detail_view(bot, schedules)
 
-    # No bots → start wizard
     if not bots:
         return _step1_view()
 
-    # Bot list
     rows = [
         ui.Stack(direction="row", children=[
             ui.Text(content=b["name"]),
