@@ -6,7 +6,7 @@ from imperal_sdk.types import ActionResult  # noqa: F811
 
 from app import chat, load_settings, save_settings, get_cached_bots, invalidate_bots_cache
 from params import EmptyParams, CreateBotParams, BotNameParams, BotIdParams, SetPromptParams
-from api_client import (
+from tgbot_api import (
     mos_create_bot, mos_list_bots, mos_delete_bot,
     mos_update_bot, mos_enable_bot, mos_disable_bot, mos_relink_bot,
 )
