@@ -19,13 +19,13 @@ def _status_badge(bot: dict) -> ui.UINode:
     title="TG Боты",
     icon="MessageCircle",
     default_width=220,
-    refresh="on_event:tgbot.created,tgbot.deleted,tgbot.updated",
+    refresh="on_event:tgbot.created,tgbot.deleted,tgbot.updated,tgbot.nav_create",
 )
 async def sidebar_panel(ctx):
     """Left sidebar: bot list with status badges and create button."""
     bots = await get_cached_bots(ctx)
 
-    create_btn = ui.Form(action="create_bot", children=[], submit_label="+ Создать бота")
+    create_btn = ui.Form(action="show_create_form", children=[], submit_label="+ Создать бота")
 
     if not bots:
         return ui.Stack(children=[
@@ -39,16 +39,13 @@ async def sidebar_panel(ctx):
             ui.Stack(
                 direction="row",
                 children=[
-                    ui.Button(
-                        label=b["name"],
-                        on_click=ui.Call(
-                            "__panel__main",
-                            active_view="detail",
-                            selected_bot_id=b["id"],
-                            note_id="board",
-                        ),
-                    ),
+                    ui.Text(content=b["name"]),
                     _status_badge(b),
+                    ui.Form(
+                        action="open_bot_detail",
+                        children=[ui.Input(param_name="bot_id", placeholder=b["id"])],
+                        submit_label="Открыть",
+                    ),
                 ],
             )
         )
