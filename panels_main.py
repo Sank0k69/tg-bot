@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from imperal_sdk import ui
 from app import ext, get_cached_bots
-from api_client import mos_list_schedules
+from tgbot_api import mos_list_schedules
 
 NAV_COLLECTION = "tgbot_nav"
 
@@ -14,7 +14,6 @@ _BOTFATHER_QR = (
 
 
 async def _get_nav_view(ctx) -> str:
-    """Read pending nav view from store, then clear it."""
     try:
         page = await ctx.store.query(NAV_COLLECTION, limit=1)
         docs = getattr(page, "data", None) or []
@@ -27,8 +26,6 @@ async def _get_nav_view(ctx) -> str:
         pass
     return ""
 
-
-# ── Wizard step 1: explain + BotFather QR ────────────────────────────────────
 
 def _step1_view() -> ui.UINode:
     return ui.Stack(children=[
@@ -60,8 +57,6 @@ def _step1_view() -> ui.UINode:
         ),
     ])
 
-
-# ── Wizard step 2: token + name + prompt ─────────────────────────────────────
 
 def _step2_view() -> ui.UINode:
     return ui.Stack(children=[
@@ -97,8 +92,6 @@ def _step2_view() -> ui.UINode:
     ])
 
 
-# ── After creation: unlinked (scan QR to activate) ───────────────────────────
-
 def _unlinked_view(bot: dict) -> ui.UINode:
     invite_link = bot.get("invite_link", "")
     qr = bot.get("qr_base64", "")
@@ -124,8 +117,6 @@ def _unlinked_view(bot: dict) -> ui.UINode:
     )
     return ui.Stack(children=children)
 
-
-# ── Bot detail ────────────────────────────────────────────────────────────────
 
 def _detail_view(bot: dict, schedules: list) -> ui.UINode:
     if bot.get("owner_chat_id") and bot.get("enabled"):
@@ -219,8 +210,6 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
     ])
 
 
-# ── Main panel ────────────────────────────────────────────────────────────────
-
 @ext.panel(
     "main",
     slot="center",
@@ -230,7 +219,6 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
 )
 async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None,
                      note_id: str = None):
-    """Center panel: guided wizard / detail / list views."""
     bots = await get_cached_bots(ctx)
 
     nav_view = await _get_nav_view(ctx)
