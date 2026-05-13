@@ -6,7 +6,7 @@ from imperal_sdk.types import ActionResult  # noqa: F811
 
 from app import chat, load_settings
 from params import AddScheduleParams, RemoveScheduleParams, BotNameParams
-from api_client import mos_list_bots, mos_add_schedule, mos_remove_schedule, mos_list_schedules
+from tgbot_api import mos_list_bots, mos_add_schedule, mos_remove_schedule, mos_list_schedules
 
 VALID_TASK_TYPES = ("analytics_daily", "analytics_weekly", "custom_message")
 
@@ -25,7 +25,6 @@ VALID_TASK_TYPES = ("analytics_daily", "analytics_weekly", "custom_message")
     event="tgbot.schedule.created",
 )
 async def fn_add_schedule(ctx, params: AddScheduleParams) -> ActionResult:
-    """Add cron schedule — snapshots Matomo credentials from ctx.store into task_config."""
     if params.task_type not in VALID_TASK_TYPES:
         return ActionResult.error(
             error=f"Invalid task_type. Choose: {', '.join(VALID_TASK_TYPES)}"
@@ -73,7 +72,6 @@ async def fn_add_schedule(ctx, params: AddScheduleParams) -> ActionResult:
     event="tgbot.schedule.deleted",
 )
 async def fn_remove_schedule(ctx, params: RemoveScheduleParams) -> ActionResult:
-    """Remove schedule by ID."""
     await mos_remove_schedule(ctx, params.schedule_id)
     return ActionResult.success({}, summary="Schedule removed.")
 
@@ -85,7 +83,6 @@ async def fn_remove_schedule(ctx, params: RemoveScheduleParams) -> ActionResult:
     event="tgbot.schedule.listed",
 )
 async def fn_list_schedules(ctx, params: BotNameParams) -> ActionResult:
-    """Show schedules for a named bot."""
     bots = await mos_list_bots(ctx)
     bot = next((b for b in bots if b["name"] == params.bot_name), None)
     if not bot:
