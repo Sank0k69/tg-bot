@@ -76,6 +76,26 @@ async def get_cached_bots(ctx) -> list:
     return bots
 
 
+CURRENT_BOT_KEY = "tgbot_current_bot"
+
+
+async def set_current_bot(ctx, bot_name: str) -> None:
+    """Store selected bot name in cache for parameterless action handlers."""
+    try:
+        await ctx.cache.set(CURRENT_BOT_KEY, bot_name, ttl=300)
+    except Exception:
+        pass
+
+
+async def get_current_bot_name(ctx) -> str:
+    """Read selected bot name from cache."""
+    try:
+        name = await ctx.cache.get(CURRENT_BOT_KEY)
+        return name or ""
+    except Exception:
+        return ""
+
+
 async def invalidate_bots_cache(ctx) -> None:
     try:
         await ctx.cache.set(BOTS_CACHE_KEY, None, ttl=1)

@@ -4,7 +4,7 @@ from __future__ import annotations
 from imperal_sdk import ActionResult
 from imperal_sdk.types import ActionResult  # noqa: F811
 
-from app import chat, load_settings
+from app import chat, load_settings, get_cached_bots, get_current_bot_name
 from params import AddScheduleParams, RemoveScheduleParams, BotNameParams
 from tgbot_api import mos_list_bots, mos_add_schedule, mos_remove_schedule, mos_list_schedules
 

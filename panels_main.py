@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from imperal_sdk import ui
-from app import ext, get_cached_bots
+from app import ext, get_cached_bots, set_current_bot
 from tgbot_api import mos_list_schedules
 
 NAV_COLLECTION = "tgbot_nav"
@@ -149,12 +149,12 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
             ),
             ui.Form(
                 action="disable_bot" if bot.get("enabled") else "enable_bot",
-                children=[ui.Input(param_name="bot_name", placeholder=bot["name"])],
+                children=[],
                 submit_label="Отключить" if bot.get("enabled") else "Включить",
             ),
             ui.Form(
                 action="delete_bot",
-                children=[ui.Input(param_name="bot_name", placeholder=bot["name"])],
+                children=[],
                 submit_label="Удалить",
             ),
         ]),
@@ -166,7 +166,6 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                 action="set_prompt",
                 submit_label="Обновить промпт",
                 children=[
-                    ui.Input(param_name="bot_name", placeholder=bot["name"]),
                     ui.TextArea(param_name="system_prompt", placeholder="Новый промпт..."),
                 ],
             ),
@@ -178,7 +177,6 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                 action="add_schedule",
                 submit_label="+ Добавить",
                 children=[
-                    ui.Input(param_name="bot_name", placeholder=bot["name"]),
                     ui.Input(param_name="description", placeholder="Описание"),
                     ui.Input(param_name="cron_expr", placeholder="Cron: 0 8 * * *"),
                     ui.Select(
@@ -198,12 +196,12 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
         ui.Section(title="Тест и управление", collapsible=True, children=[
             ui.Form(
                 action="test_bot",
-                children=[ui.Input(param_name="bot_name", placeholder=bot["name"])],
+                children=[],
                 submit_label="Отправить тестовое сообщение",
             ),
             ui.Form(
                 action="relink_bot",
-                children=[ui.Input(param_name="bot_name", placeholder=bot["name"])],
+                children=[],
                 submit_label="Перепривязать (новый QR)",
             ),
         ]),
@@ -244,6 +242,7 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
     if active_view == "detail" and selected_bot_id:
         bot = next((b for b in bots if b["id"] == selected_bot_id), None)
         if bot:
+            await set_current_bot(ctx, bot["name"])
             schedules = await mos_list_schedules(ctx, selected_bot_id)
             return _detail_view(bot, schedules)
 
