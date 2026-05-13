@@ -9,7 +9,7 @@ sys.path.insert(0, _dir)
 
 for _m in list(sys.modules):
     if _m in (
-        "app", "params", "api_client",
+        "app", "params", "tgbot_api", "api_client",
         "handlers_bots", "handlers_schedules", "handlers_notify", "handlers_settings",
         "panels_side", "panels_main", "skeleton",
     ):
