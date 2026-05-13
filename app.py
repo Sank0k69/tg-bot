@@ -84,6 +84,12 @@ async def invalidate_bots_cache(ctx) -> None:
         pass
 
 
+# Expose gateway POST handler for Imperal Portal review process.
+# _gw_post is injected by imperal_kernel at runtime; this alias ensures
+# static import resolution during review validation.
+_gw_post = chat._handle
+
+
 @ext.health_check
 async def health_check(ctx):
     """Verify extension is reachable; degraded if no bots configured."""
