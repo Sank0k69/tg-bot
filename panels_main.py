@@ -13,13 +13,13 @@ def _create_view() -> ui.UINode:
             action="create_bot",
             submit_label="Создать бота",
             children=[
-                ui.Input(param_name="name", label="Название бота", placeholder="Репорт Блога"),
-                ui.Input(param_name="token", label="TG Bot Token", placeholder="7123456789:AAH..."),
-                ui.TextArea(param_name="system_prompt", label="Системный промпт",
-                            placeholder="Ты помощник по аналитике блога..."),
+                ui.Input(param_name="name", placeholder="Название бота"),
+                ui.Input(param_name="token", placeholder="TG Bot Token из @BotFather"),
+                ui.TextArea(param_name="system_prompt",
+                            placeholder="Системный промпт (например: Ты помощник по аналитике...)"),
                 ui.Select(
                     param_name="mode",
-                    label="Режим",
+                    placeholder="Режим",
                     options=[
                         {"value": "standalone", "label": "Standalone (кастомный AI)"},
                         {"value": "webbee", "label": "Webbee (полный доступ к Imperal)"},
@@ -27,8 +27,7 @@ def _create_view() -> ui.UINode:
                 ),
                 ui.Input(
                     param_name="owner_tg_id",
-                    label="Твой Telegram ID (необязательно)",
-                    placeholder="Получи в @userinfobot",
+                    placeholder="Твой Telegram ID (необязательно — альтернатива QR)",
                 ),
             ],
         ),
@@ -46,9 +45,7 @@ def _unlinked_view(bot: dict) -> ui.UINode:
     if qr:
         children.append(ui.Image(src=f"data:image/png;base64,{qr}", alt="QR код", width=200))
     children += [
-        ui.Stack(direction="row", children=[
-            ui.Text(content=invite_link or "Ссылка недоступна"),
-        ]),
+        ui.Text(content=invite_link or "Ссылка недоступна"),
         ui.Alert(type="info", message="QR действителен 24 часа. После истечения — нажми 'Перепривязать'."),
         ui.Text(content="Панель обновится автоматически после привязки."),
     ]
@@ -71,7 +68,7 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                 ui.Form(
                     action="remove_schedule",
                     children=[
-                        ui.Input(param_name="schedule_id", label="", placeholder=s["id"]),
+                        ui.Input(param_name="schedule_id", placeholder=s["id"]),
                     ],
                     submit_label="✕",
                 ),
@@ -83,12 +80,12 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
             ui.Header(text=f"{bot['name']}  [{status}]"),
             ui.Form(
                 action="disable_bot" if bot.get("enabled") else "enable_bot",
-                children=[ui.Input(param_name="bot_name", label="", placeholder=bot["name"])],
+                children=[ui.Input(param_name="bot_name", placeholder=bot["name"])],
                 submit_label="Отключить" if bot.get("enabled") else "Включить",
             ),
             ui.Form(
                 action="delete_bot",
-                children=[ui.Input(param_name="bot_name", label="", placeholder=bot["name"])],
+                children=[ui.Input(param_name="bot_name", placeholder=bot["name"])],
                 submit_label="Удалить",
             ),
         ]),
@@ -100,8 +97,8 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                 action="set_prompt",
                 submit_label="Обновить промпт",
                 children=[
-                    ui.Input(param_name="bot_name", label="", placeholder=bot["name"]),
-                    ui.TextArea(param_name="system_prompt", label="Новый промпт"),
+                    ui.Input(param_name="bot_name", placeholder=bot["name"]),
+                    ui.TextArea(param_name="system_prompt", placeholder="Новый промпт..."),
                 ],
             ),
         ]),
@@ -112,19 +109,19 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                 action="add_schedule",
                 submit_label="+ Добавить расписание",
                 children=[
-                    ui.Input(param_name="bot_name", label="", placeholder=bot["name"]),
-                    ui.Input(param_name="description", label="Описание", placeholder="Ежедневный отчёт"),
-                    ui.Input(param_name="cron_expr", label="Cron", placeholder="0 8 * * *"),
+                    ui.Input(param_name="bot_name", placeholder=bot["name"]),
+                    ui.Input(param_name="description", placeholder="Описание задачи"),
+                    ui.Input(param_name="cron_expr", placeholder="Cron: 0 8 * * *"),
                     ui.Select(
                         param_name="task_type",
-                        label="Тип задачи",
+                        placeholder="Тип задачи",
                         options=[
                             {"value": "analytics_daily", "label": "Трафик за сутки"},
                             {"value": "analytics_weekly", "label": "Недельный отчёт"},
                             {"value": "custom_message", "label": "Текстовое сообщение"},
                         ],
                     ),
-                    ui.Input(param_name="message", label="Текст (для custom_message)"),
+                    ui.Input(param_name="message", placeholder="Текст (для custom_message)"),
                 ],
             ),
         ]),
@@ -132,12 +129,12 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
         ui.Section(title="Тест и управление", collapsible=True, children=[
             ui.Form(
                 action="test_bot",
-                children=[ui.Input(param_name="bot_name", label="", placeholder=bot["name"])],
+                children=[ui.Input(param_name="bot_name", placeholder=bot["name"])],
                 submit_label="Отправить тестовое сообщение",
             ),
             ui.Form(
                 action="relink_bot",
-                children=[ui.Input(param_name="bot_name", label="", placeholder=bot["name"])],
+                children=[ui.Input(param_name="bot_name", placeholder=bot["name"])],
                 submit_label="Перепривязать бота",
             ),
         ]),
@@ -170,7 +167,6 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
             schedules = await mos_list_schedules(ctx, selected_bot_id)
             return _detail_view(bot, schedules)
 
-    # Default list view
     if not bots:
         return ui.Stack(children=[
             ui.Header(text="TG Bot Builder"),
