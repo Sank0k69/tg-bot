@@ -71,7 +71,7 @@ async def fn_test_bot(ctx, params: TestBotParams) -> ActionResult:
     return ActionResult.success({}, summary=f"Test message sent to '{params.bot_name}'.")
 
 
-@ext.webhook("/tg-message")
+@ext.webhook("tg-message")
 async def handle_tg_message(ctx, headers: dict, body: str, query_params: dict) -> dict:
     """Webbee mode: receive TG message from MOS, process with AI, send reply."""
     import json as _json

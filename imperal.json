@@ -557,7 +557,7 @@
   "icon_size_bytes": 207,
   "webhooks": [
     {
-      "path": "/tg-message",
+      "path": "tg-message",
       "method": "POST",
       "secret_header": ""
     }
