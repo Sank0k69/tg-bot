@@ -84,10 +84,13 @@ async def invalidate_bots_cache(ctx) -> None:
         pass
 
 
-# Expose gateway POST handler for Imperal Portal review process.
-# _gw_post is injected by imperal_kernel at runtime; this alias ensures
-# static import resolution during review validation.
-_gw_post = chat._handle
+# Gateway POST handler — imperal_kernel replaces this at runtime.
+# Stub exposed here so Portal review import succeeds.
+async def _gw_post(message: str = "", ctx=None, **kwargs) -> dict:
+    """Handle inbound chat message. Delegates to ChatExtension at runtime."""
+    if ctx is not None:
+        return await chat._handle(ctx, message, **kwargs)
+    return {"status": "ok", "response": ""}
 
 
 @ext.health_check
