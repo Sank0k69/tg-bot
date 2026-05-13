@@ -171,7 +171,10 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
         return ui.Stack(children=[
             ui.Header(text="TG Bot Builder"),
             ui.Empty(message="Ботов нет."),
-            ui.Form(action="create_bot", children=[], submit_label="Создать первого бота"),
+            ui.Button(
+                label="Создать первого бота",
+                on_click=ui.Call("__panel__main", active_view="create", note_id="board"),
+            ),
         ])
 
     rows = [
@@ -193,7 +196,10 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
     ]
     return ui.Stack(children=[
         ui.Header(text="Мои боты"),
-        ui.Form(action="create_bot", children=[], submit_label="+ Создать бота"),
+        ui.Button(
+            label="+ Создать бота",
+            on_click=ui.Call("__panel__main", active_view="create", note_id="board"),
+        ),
         ui.Divider(),
         *rows,
     ])
