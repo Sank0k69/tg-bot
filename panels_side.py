@@ -22,7 +22,6 @@ def _status_badge(bot: dict) -> ui.UINode:
     refresh="on_event:tgbot.created,tgbot.deleted,tgbot.updated,tgbot.nav_create",
 )
 async def sidebar_panel(ctx):
-    """Left sidebar: bot list with status badges and create button."""
     bots = await get_cached_bots(ctx)
 
     create_btn = ui.Form(action="show_create_form", children=[], submit_label="+ Создать бота")
@@ -36,18 +35,15 @@ async def sidebar_panel(ctx):
     bot_items = []
     for b in bots:
         bot_items.append(
-            ui.Stack(
-                direction="row",
-                children=[
-                    ui.Text(content=b["name"]),
-                    _status_badge(b),
-                    ui.Form(
-                        action="open_bot_detail",
-                        children=[ui.Input(param_name="bot_id", placeholder=b["id"])],
-                        submit_label="Открыть",
-                    ),
-                ],
-            )
+            ui.Stack(direction="row", children=[
+                ui.Text(content=b["name"]),
+                _status_badge(b),
+                ui.Form(
+                    action="open_bot_detail",
+                    children=[ui.Input(param_name="bot_id", value=b["id"])],
+                    submit_label="Открыть",
+                ),
+            ])
         )
 
     return ui.Stack(children=[create_btn, ui.Divider(), *bot_items])
