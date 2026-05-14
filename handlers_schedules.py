@@ -137,6 +137,7 @@ async def fn_add_schedule(ctx, params: AddScheduleParams) -> ActionResult:
     return ActionResult.success(
         result,
         summary=f"Schedule added for '{params.bot_name}': {params.description} ({params.cron_expr})",
+        refresh_panels=["main"],
     )
 
 
@@ -150,7 +151,7 @@ async def fn_add_schedule(ctx, params: AddScheduleParams) -> ActionResult:
 )
 async def fn_remove_schedule(ctx, params: RemoveScheduleParams) -> ActionResult:
     await mos_remove_schedule(ctx, params.schedule_id)
-    return ActionResult.success({}, summary="Schedule removed.")
+    return ActionResult.success({}, summary="Schedule removed.", refresh_panels=["main"])
 
 
 @chat.function(

@@ -180,7 +180,7 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
     slot="center",
     title="TG Bot Builder",
     icon="MessageCircle",
-    refresh="on_event:tgbot.created,tgbot.deleted,tgbot.updated,tgbot.listed,tgbot.nav_create,tgbot.nav_step2,tgbot.nav_detail,tgbot.nav_list",
+    refresh="on_event:tgbot.created,tgbot.deleted,tgbot.updated,tgbot.listed,tgbot.nav_create,tgbot.nav_step2,tgbot.nav_detail,tgbot.nav_list,tgbot.schedule.created,tgbot.schedule.deleted",
 )
 async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None,
                      note_id: str = None):

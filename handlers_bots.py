@@ -125,6 +125,7 @@ async def fn_create_bot(ctx, params: CreateBotParams) -> ActionResult:
             f"Scan QR in panel or open: {result.get('invite_link', '')}\n"
             f"Press START in Telegram to link."
         ),
+        refresh_panels=["sidebar", "main"],
     )
 
 
@@ -143,7 +144,7 @@ async def fn_delete_bot(ctx, params: BotNameParams) -> ActionResult:
         return ActionResult.error(error=f"Bot '{params.bot_name}' not found.")
     await mos_delete_bot(ctx, bot["id"])
     await invalidate_bots_cache(ctx)
-    return ActionResult.success({}, summary=f"Bot '{params.bot_name}' deleted.")
+    return ActionResult.success({}, summary=f"Bot '{params.bot_name}' deleted.", refresh_panels=["sidebar", "main"])
 
 
 @chat.function(
@@ -161,7 +162,7 @@ async def fn_enable_bot(ctx, params: BotNameParams) -> ActionResult:
         return ActionResult.error(error=f"Bot '{params.bot_name}' not found.")
     await mos_enable_bot(ctx, bot["id"])
     await invalidate_bots_cache(ctx)
-    return ActionResult.success({}, summary=f"Bot '{params.bot_name}' enabled.")
+    return ActionResult.success({}, summary=f"Bot '{params.bot_name}' enabled.", refresh_panels=["sidebar", "main"])
 
 
 @chat.function(
@@ -179,7 +180,7 @@ async def fn_disable_bot(ctx, params: BotNameParams) -> ActionResult:
         return ActionResult.error(error=f"Bot '{params.bot_name}' not found.")
     await mos_disable_bot(ctx, bot["id"])
     await invalidate_bots_cache(ctx)
-    return ActionResult.success({}, summary=f"Bot '{params.bot_name}' disabled.")
+    return ActionResult.success({}, summary=f"Bot '{params.bot_name}' disabled.", refresh_panels=["sidebar", "main"])
 
 
 @chat.function(
@@ -197,7 +198,7 @@ async def fn_set_prompt(ctx, params: SetPromptParams) -> ActionResult:
         return ActionResult.error(error=f"Bot '{params.bot_name}' not found.")
     await mos_update_bot(ctx, bot["id"], system_prompt=params.system_prompt)
     await invalidate_bots_cache(ctx)
-    return ActionResult.success({}, summary=f"Prompt updated for '{params.bot_name}'.")
+    return ActionResult.success({}, summary=f"Prompt updated for '{params.bot_name}'.", refresh_panels=["main"])
 
 
 @chat.function(
@@ -218,4 +219,5 @@ async def fn_relink_bot(ctx, params: BotNameParams) -> ActionResult:
     return ActionResult.success(
         result,
         summary=f"New link for '{params.bot_name}':\n{result.get('invite_link', '')}\nQR updated.",
+        refresh_panels=["main"],
     )

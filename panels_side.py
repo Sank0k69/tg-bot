@@ -19,7 +19,7 @@ def _status_badge(bot: dict) -> ui.UINode:
     title="TG Боты",
     icon="MessageCircle",
     default_width=220,
-    refresh="on_event:tgbot.created,tgbot.deleted,tgbot.updated,tgbot.nav_create",
+    refresh="on_event:tgbot.created,tgbot.deleted,tgbot.updated,tgbot.nav_create,tgbot.schedule.created,tgbot.schedule.deleted",
 )
 async def sidebar_panel(ctx):
     bots = await get_cached_bots(ctx)
