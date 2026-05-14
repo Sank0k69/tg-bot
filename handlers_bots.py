@@ -4,7 +4,7 @@ from __future__ import annotations
 from imperal_sdk import ActionResult
 from imperal_sdk.types import ActionResult  # noqa: F811
 
-from app import chat, load_settings, save_settings, get_cached_bots, invalidate_bots_cache
+from app import chat, load_settings, save_settings, get_cached_bots, invalidate_bots_cache, clear_current_bot_id
 from params import EmptyParams, CreateBotParams, BotNameParams, BotIdParams, SetPromptParams
 from tgbot_api import (
     mos_create_bot, mos_list_bots, mos_delete_bot,
@@ -51,6 +51,7 @@ async def fn_show_create_form(ctx, params: EmptyParams) -> ActionResult:
 async def fn_show_bot_list(ctx, params: EmptyParams) -> ActionResult:
     """Clear nav state so main panel renders bot list."""
     await _set_nav(ctx, "")
+    await clear_current_bot_id(ctx)
     return ActionResult.success({}, summary="")
 
 

@@ -103,6 +103,32 @@ async def invalidate_bots_cache(ctx) -> None:
         pass
 
 
+CURRENT_BOT_ID_KEY = "tgbot_current_bot_id"
+
+
+async def set_current_bot_id(ctx, bot_id: str) -> None:
+    """Persist the detail view bot_id through panel refreshes."""
+    try:
+        await ctx.cache.set(CURRENT_BOT_ID_KEY, bot_id, ttl=300)
+    except Exception:
+        pass
+
+
+async def get_current_bot_id(ctx) -> str:
+    try:
+        val = await ctx.cache.get(CURRENT_BOT_ID_KEY)
+        return val or ""
+    except Exception:
+        return ""
+
+
+async def clear_current_bot_id(ctx) -> None:
+    try:
+        await ctx.cache.set(CURRENT_BOT_ID_KEY, None, ttl=1)
+    except Exception:
+        pass
+
+
 async def _gw_post(message: str = "", ctx=None, **kwargs) -> dict:
     if ctx is not None:
         return await chat._handle(ctx, message, **kwargs)

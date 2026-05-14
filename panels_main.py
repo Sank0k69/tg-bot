@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from imperal_sdk import ui
-from app import ext, get_cached_bots, set_current_bot
+from app import ext, get_cached_bots, set_current_bot, set_current_bot_id, get_current_bot_id, clear_current_bot_id
 from tgbot_api import mos_list_schedules
 
 NAV_COLLECTION = "tgbot_nav"
@@ -196,6 +196,7 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
         bot = next((b for b in bots if b["id"] == bot_id), None)
         if bot:
             await set_current_bot(ctx, bot["name"])
+            await set_current_bot_id(ctx, bot_id)
             schedules = await mos_list_schedules(ctx, bot_id)
             return _detail_view(bot, schedules)
     # nav_view == "" → fall through to bot list
@@ -212,7 +213,16 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
         bot = next((b for b in bots if b["id"] == selected_bot_id), None)
         if bot:
             await set_current_bot(ctx, bot["name"])
+            await set_current_bot_id(ctx, selected_bot_id)
             schedules = await mos_list_schedules(ctx, selected_bot_id)
+            return _detail_view(bot, schedules)
+
+    # cache-restore: stay in detail view on refresh (nav already consumed one-shot)
+    cached_bot_id = await get_current_bot_id(ctx)
+    if cached_bot_id:
+        bot = next((b for b in bots if b["id"] == cached_bot_id), None)
+        if bot:
+            schedules = await mos_list_schedules(ctx, cached_bot_id)
             return _detail_view(bot, schedules)
 
     if not bots:
