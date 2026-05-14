@@ -361,6 +361,15 @@
   "webhooks": [
     {"path": "tg-message", "method": "POST", "secret_header": ""}
   ],
+  "events": {
+    "subscribes": [
+      {
+        "type": "tg.message.received",
+        "handler": "process_tg_message"
+      }
+    ],
+    "emits": []
+  },
   "exposed": [
     {"name": "send_message", "action_type": "read"}
   ],
