@@ -109,10 +109,11 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
     for s in schedules:
         sched_items.append(ui.Stack(direction="row", children=[
             ui.Text(content=f"📅 {s['cron_expr']}  {s['description']}  ({s['task_type']})"),
-            ui.Form(
-                action="remove_schedule",
-                children=[ui.Input(param_name="schedule_id", placeholder=s["id"])],
-                submit_label="✕",
+            ui.Button(
+                label="✕",
+                size="sm",
+                variant="secondary",
+                on_click=ui.Call("remove_schedule", schedule_id=s["id"]),
             ),
         ]))
 
