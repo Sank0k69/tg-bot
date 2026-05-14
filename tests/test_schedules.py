@@ -25,20 +25,20 @@ async def test_invalid_task_type_rejected(ctx):
 
 @pytest.mark.asyncio
 async def test_add_schedule_bot_not_found(ctx):
-    with patch("handlers_schedules.mos_list_bots", new=AsyncMock(return_value=[])):
+    with patch("handlers_schedules.get_cached_bots", new=AsyncMock(return_value=[])):
         params = AddScheduleParams(
             bot_name="Ghost", description="d",
             cron_expr="0 8 * * *", task_type="custom_message", message="hi",
         )
         result = await handlers_schedules.fn_add_schedule(ctx, params)
     assert result.status == "error"
-    assert "not found" in result.error.lower()
+    assert "not found" in result.error.lower() or "найден" in result.error.lower()
 
 
 @pytest.mark.asyncio
 async def test_add_custom_message_schedule(ctx):
     bots = [{"id": "b1", "name": "MyBot", "enabled": 1}]
-    with patch("handlers_schedules.mos_list_bots", new=AsyncMock(return_value=bots)), \
+    with patch("handlers_schedules.get_cached_bots", new=AsyncMock(return_value=bots)), \
          patch("handlers_schedules.mos_add_schedule", new=AsyncMock(return_value={"id": "s1"})):
         params = AddScheduleParams(
             bot_name="MyBot", description="Daily hello",
@@ -50,6 +50,6 @@ async def test_add_custom_message_schedule(ctx):
 
 @pytest.mark.asyncio
 async def test_list_schedules_bot_not_found(ctx):
-    with patch("handlers_schedules.mos_list_bots", new=AsyncMock(return_value=[])):
+    with patch("handlers_schedules.get_cached_bots", new=AsyncMock(return_value=[])):
         result = await handlers_schedules.fn_list_schedules(ctx, BotNameParams(bot_name="Ghost"))
     assert result.status == "error"
