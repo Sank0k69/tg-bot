@@ -11,6 +11,66 @@ from tgbot_api import mos_list_bots, mos_add_schedule, mos_remove_schedule, mos_
 VALID_TASK_TYPES = ("analytics_daily", "analytics_weekly", "custom_message")
 
 
+def _parse_cron_natural(text: str) -> str:
+    """Convert natural language to cron. Returns cron string or original if already valid."""
+    import re
+    t = text.lower().strip()
+
+    # Already valid cron (5 fields)
+    if re.match(r'^[\d\*\/\-\,]+ [\d\*\/\-\,]+ [\d\*\/\-\,]+ [\d\*\/\-\,]+ [\d\*\/\-\,]+$', t):
+        return t
+
+    # Extract hour
+    hour_match = re.search(r'в\s+(\d{1,2})', t) or re.search(r'at\s+(\d{1,2})', t)
+    hour = hour_match.group(1) if hour_match else "8"
+
+    # Daily patterns
+    if any(w in t for w in ["каждый день", "ежедневно", "каждое утро", "каждый вечер", "каждую ночь", "daily", "every day"]):
+        if "вечер" in t:
+            hour = hour_match.group(1) if hour_match else "19"
+        elif "ночь" in t or "ночью" in t:
+            hour = hour_match.group(1) if hour_match else "0"
+        return f"0 {hour} * * *"
+
+    # Hourly
+    if any(w in t for w in ["каждый час", "hourly", "every hour"]):
+        return "0 * * * *"
+
+    # Every N minutes
+    min_match = re.search(r'каждые?\s+(\d+)\s+минут', t) or re.search(r'every\s+(\d+)\s+min', t)
+    if min_match:
+        mins = int(min_match.group(1))
+        if mins < 5:
+            raise ValueError("Минимальный интервал — 5 минут")
+        return f"*/{mins} * * * *"
+
+    # Weekly patterns
+    days = {
+        "понедельник": 1, "вторник": 2, "среда": 3, "четверг": 4,
+        "пятниц": 5, "суббот": 6, "воскресень": 0,
+        "monday": 1, "tuesday": 2, "wednesday": 3, "thursday": 4,
+        "friday": 5, "saturday": 6, "sunday": 0,
+    }
+    for day_word, day_num in days.items():
+        if day_word in t:
+            return f"0 {hour} * * {day_num}"
+
+    if any(w in t for w in ["раз в неделю", "еженедельно", "weekly", "once a week"]):
+        return f"0 {hour} * * 1"
+
+    # Monthly
+    if any(w in t for w in ["раз в месяц", "ежемесячно", "monthly", "once a month"]):
+        return f"0 {hour} 1 * *"
+
+    # Morning/evening shortcuts
+    if "утр" in t:
+        return f"0 {hour if hour_match else '8'} * * *"
+    if "вечер" in t:
+        return f"0 {hour if hour_match else '19'} * * *"
+
+    raise ValueError(f"Не понял время: '{text}'. Примеры: 'каждое утро в 8', 'по понедельникам в 9', 'каждый день в 18'.")
+
+
 @chat.function(
     "add_schedule",
     description=(
@@ -27,12 +87,21 @@ VALID_TASK_TYPES = ("analytics_daily", "analytics_weekly", "custom_message")
 async def fn_add_schedule(ctx, params: AddScheduleParams) -> ActionResult:
     if params.task_type not in VALID_TASK_TYPES:
         return ActionResult.error(
-            error=f"Invalid task_type. Choose: {', '.join(VALID_TASK_TYPES)}"
+            error=f"Неверный тип задачи. Выбери один из: {', '.join(VALID_TASK_TYPES)}"
         )
-    bots = await mos_list_bots(ctx)
-    bot = next((b for b in bots if b["name"] == params.bot_name), None)
+
+    # Natural language cron parsing
+    cron_expr = params.cron_expr
+    try:
+        cron_expr = _parse_cron_natural(params.cron_expr)
+    except ValueError as e:
+        return ActionResult.error(error=str(e))
+
+    name = await _resolve_bot_name(ctx, params)
+    bots = await get_cached_bots(ctx)
+    bot = next((b for b in bots if b["name"] == name), None)
     if not bot:
-        return ActionResult.error(error=f"Bot '{params.bot_name}' not found.")
+        return ActionResult.error(error=f"Бот '{name}' не найден.")
 
     settings = await load_settings(ctx)
     task_config: dict = {}
@@ -52,7 +121,7 @@ async def fn_add_schedule(ctx, params: AddScheduleParams) -> ActionResult:
         task_config = {"message": params.message or "Hello from your bot!"}
 
     result = await mos_add_schedule(
-        ctx, bot["id"], params.cron_expr, params.description,
+        ctx, bot["id"], cron_expr, params.description,
         params.task_type, task_config,
     )
     if "error" in result:
