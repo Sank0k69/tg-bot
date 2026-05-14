@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from imperal_sdk import ui
-from app import ext, get_cached_bots
+from app import ext, get_cached_bots, set_current_bot
 from tgbot_api import mos_list_schedules
 
 NAV_COLLECTION = "tgbot_nav"
@@ -97,6 +97,7 @@ def _unlinked_view(bot: dict) -> ui.UINode:
 
 
 def _detail_view(bot: dict, schedules: list) -> ui.UINode:
+    # Note: bot_name resolved from ctx.cache — NO bot_name inputs in action buttons
     if bot.get("owner_chat_id") and bot.get("enabled"):
         status = "Active"
     elif not bot.get("owner_chat_id"):
@@ -104,84 +105,72 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
     else:
         status = "Disabled"
 
-    bot_name = bot["name"]
-
     sched_items = []
     for s in schedules:
         sched_items.append(ui.Stack(direction="row", children=[
-            ui.Text(content=f"{s['cron_expr']}  {s['description']}  ({s['task_type']})"),
+            ui.Text(content=f"📅 {s['cron_expr']}  {s['description']}  ({s['task_type']})"),
             ui.Form(
                 action="remove_schedule",
-                children=[ui.Input(param_name="schedule_id", value=s["id"])],
+                children=[ui.Input(param_name="schedule_id", placeholder=s["id"])],
                 submit_label="✕",
             ),
         ]))
 
     return ui.Stack(children=[
         ui.Stack(direction="row", children=[
-            ui.Header(text=bot_name),
-            ui.Badge(label=status, color="green" if bot.get("owner_chat_id") and bot.get("enabled") else
-                     "orange" if not bot.get("owner_chat_id") else "red"),
+            ui.Header(text=bot["name"]),
+            ui.Badge(
+                label=status,
+                color="green" if bot.get("owner_chat_id") and bot.get("enabled") else
+                "orange" if not bot.get("owner_chat_id") else "red",
+            ),
+            # children=[] — bot name comes from ctx.cache (set_current_bot called in panel)
             ui.Form(
                 action="disable_bot" if bot.get("enabled") else "enable_bot",
-                children=[ui.Input(param_name="bot_name", value=bot_name)],
+                children=[],
                 submit_label="Отключить" if bot.get("enabled") else "Включить",
             ),
-            ui.Form(
-                action="delete_bot",
-                children=[ui.Input(param_name="bot_name", value=bot_name)],
-                submit_label="Удалить",
-            ),
+            ui.Form(action="delete_bot", children=[], submit_label="Удалить"),
         ]),
         ui.Text(content=f"@{bot.get('bot_username', '')} · Режим: {bot.get('mode', 'standalone')}"),
         ui.Divider(),
         ui.Section(title="Системный промпт", collapsible=True, children=[
-            ui.Text(content=bot.get("system_prompt") or "(не задан — универсальный ассистент)"),
+            ui.Text(content=bot.get("system_prompt") or "(не задан)"),
             ui.Form(
                 action="set_prompt",
                 submit_label="Обновить промпт",
                 children=[
-                    ui.Input(param_name="bot_name", value=bot_name),
                     ui.TextArea(param_name="system_prompt", placeholder="Новый промпт..."),
                 ],
             ),
         ]),
         ui.Divider(),
-        ui.Section(title="Расписания (авто-отчёты)", collapsible=True, children=[
+        ui.Section(title="Расписания", collapsible=True, children=[
             *sched_items,
             ui.Form(
                 action="add_schedule",
-                submit_label="+ Добавить",
+                submit_label="+ Добавить расписание",
                 children=[
-                    ui.Input(param_name="bot_name", value=bot_name),
-                    ui.Input(param_name="description", placeholder="Описание"),
-                    ui.Input(param_name="cron_expr", placeholder="Cron: 0 8 * * *"),
+                    ui.Input(param_name="description", placeholder="Описание, напр: Трафик каждое утро"),
+                    ui.Input(param_name="cron_expr", placeholder="Время: 0 8 * * * (или текстом в чате)"),
                     ui.Select(
-                        param_name="task_type", placeholder="Тип",
+                        param_name="task_type",
+                        placeholder="Тип задачи",
                         options=[
-                            {"value": "analytics_daily", "label": "Трафик за сутки"},
-                            {"value": "analytics_weekly", "label": "Недельный отчёт"},
-                            {"value": "custom_message", "label": "Текстовое сообщение"},
+                            {"value": "analytics_daily", "label": "📊 Трафик за сутки"},
+                            {"value": "analytics_weekly", "label": "📈 Недельный отчёт"},
+                            {"value": "custom_message", "label": "💬 Текстовое сообщение"},
                         ],
                     ),
-                    ui.Input(param_name="message", placeholder="Текст (для custom_message)"),
+                    ui.Input(param_name="message", placeholder="Текст сообщения (если выбрано выше)"),
                 ],
             ),
         ]),
         ui.Divider(),
-        ui.Section(title="Тест и управление", collapsible=True, children=[
-            ui.Form(
-                action="test_bot",
-                children=[ui.Input(param_name="bot_name", value=bot_name)],
-                submit_label="Отправить тестовое сообщение",
-            ),
-            ui.Form(
-                action="relink_bot",
-                children=[ui.Input(param_name="bot_name", value=bot_name)],
-                submit_label="Перепривязать (новый QR)",
-            ),
+        ui.Section(title="Управление", collapsible=True, children=[
+            ui.Form(action="test_bot", children=[], submit_label="📤 Отправить тест в Telegram"),
+            ui.Form(action="relink_bot", children=[], submit_label="🔄 Перепривязать (новый QR)"),
         ]),
-        # Back button uses show_bot_list (not show_create_form) to navigate to bot list
         ui.Form(action="show_bot_list", children=[], submit_label="← К списку ботов"),
     ])
 
@@ -206,6 +195,7 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
         bot_id = nav_view.split(":", 1)[1]
         bot = next((b for b in bots if b["id"] == bot_id), None)
         if bot:
+            await set_current_bot(ctx, bot["name"])
             schedules = await mos_list_schedules(ctx, bot_id)
             return _detail_view(bot, schedules)
     # nav_view == "" → fall through to bot list
@@ -221,28 +211,33 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
     if active_view == "detail" and selected_bot_id:
         bot = next((b for b in bots if b["id"] == selected_bot_id), None)
         if bot:
+            await set_current_bot(ctx, bot["name"])
             schedules = await mos_list_schedules(ctx, selected_bot_id)
             return _detail_view(bot, schedules)
 
     if not bots:
         return _step1_view()
 
-    list_items = [
-        ui.ListItem(
-            id=b["id"],
-            title=b["name"],
-            subtitle=(
-                "Active" if b.get("owner_chat_id") and b.get("enabled") else
-                "Unlinked" if not b.get("owner_chat_id") else "Disabled"
-            ),
-            badge=ui.Badge(
+    rows = [
+        ui.Stack(direction="row", children=[
+            ui.Text(content=b["name"]),
+            ui.Badge(
                 label="Active" if b.get("owner_chat_id") and b.get("enabled") else
                        "Unlinked" if not b.get("owner_chat_id") else "Disabled",
                 color="green" if b.get("owner_chat_id") and b.get("enabled") else
                        "orange" if not b.get("owner_chat_id") else "red",
             ),
-            on_click=ui.Call("open_bot_detail", bot_id=b["id"]),
-        )
+            # Panel nav — no chat function call, no bot_id param needed
+            ui.Button(
+                label="Открыть",
+                on_click=ui.Call(
+                    "__panel__main",
+                    active_view="detail",
+                    selected_bot_id=b["id"],
+                    note_id="board",
+                ),
+            ),
+        ])
         for b in bots
     ]
 
@@ -250,5 +245,5 @@ async def main_panel(ctx, active_view: str = "list", selected_bot_id: str = None
         ui.Header(text="Мои боты"),
         ui.Form(action="show_create_form", children=[], submit_label="+ Создать бота"),
         ui.Divider(),
-        ui.List(items=list_items),
+        *rows,
     ])
