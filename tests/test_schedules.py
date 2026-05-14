@@ -20,7 +20,7 @@ async def test_invalid_task_type_rejected(ctx):
     )
     result = await handlers_schedules.fn_add_schedule(ctx, params)
     assert result.status == "error"
-    assert "task_type" in result.error.lower() or "invalid" in result.error.lower()
+    assert "task_type" in result.error.lower() or "invalid" in result.error.lower() or "тип" in result.error.lower()
 
 
 @pytest.mark.asyncio

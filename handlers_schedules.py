@@ -11,6 +11,14 @@ from tgbot_api import mos_list_bots, mos_add_schedule, mos_remove_schedule, mos_
 VALID_TASK_TYPES = ("analytics_daily", "analytics_weekly", "custom_message")
 
 
+async def _resolve_bot_name(ctx, params) -> str:
+    """Return bot_name from params or fall back to ctx.cache selected bot."""
+    name = getattr(params, "bot_name", "")
+    if name:
+        return name
+    return await get_current_bot_name(ctx)
+
+
 def _parse_cron_natural(text: str) -> str:
     """Convert natural language to cron. Returns cron string or original if already valid."""
     import re
