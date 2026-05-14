@@ -8,7 +8,7 @@ from app import chat, load_settings, get_cached_bots, get_current_bot_name
 from params import AddScheduleParams, RemoveScheduleParams, BotNameParams
 from tgbot_api import mos_list_bots, mos_add_schedule, mos_remove_schedule, mos_list_schedules
 
-VALID_TASK_TYPES = ("analytics_daily", "analytics_weekly", "custom_message")
+VALID_TASK_TYPES = ("analytics_daily", "analytics_weekly", "custom_message", "rss_news_post")
 
 
 async def _resolve_bot_name(ctx, params) -> str:
@@ -128,9 +128,15 @@ async def fn_add_schedule(ctx, params: AddScheduleParams) -> ActionResult:
     if params.task_type == "custom_message":
         task_config = {"message": params.message or "Hello from your bot!"}
 
+    if params.task_type == "rss_news_post":
+        if not params.rss_url:
+            return ActionResult.error(error="rss_url required for rss_news_post task type.")
+        task_config = {"rss_url": params.rss_url, "max_items": 1}
+
     result = await mos_add_schedule(
         ctx, bot["id"], cron_expr, params.description,
         params.task_type, task_config,
+        target_chat_id=params.target_chat_id,
     )
     if "error" in result:
         return ActionResult.error(error=result["error"])

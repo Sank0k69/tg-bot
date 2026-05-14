@@ -151,8 +151,8 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                 action="add_schedule",
                 submit_label="+ Добавить расписание",
                 children=[
-                    ui.Input(param_name="description", placeholder="Описание, напр: Трафик каждое утро"),
-                    ui.Input(param_name="cron_expr", placeholder="Время: 0 8 * * * (или текстом в чате)"),
+                    ui.Input(param_name="description", placeholder="Описание, напр: Новости каждый понедельник"),
+                    ui.Input(param_name="cron_expr", placeholder="Время: 0 8 * * 1 (или текстом в чате)"),
                     ui.Select(
                         param_name="task_type",
                         placeholder="Тип задачи",
@@ -160,9 +160,15 @@ def _detail_view(bot: dict, schedules: list) -> ui.UINode:
                             {"value": "analytics_daily", "label": "📊 Трафик за сутки"},
                             {"value": "analytics_weekly", "label": "📈 Недельный отчёт"},
                             {"value": "custom_message", "label": "💬 Текстовое сообщение"},
+                            {"value": "rss_news_post", "label": "📰 Новости из RSS"},
                         ],
                     ),
-                    ui.Input(param_name="message", placeholder="Текст сообщения (если выбрано выше)"),
+                    ui.Input(param_name="message", placeholder="Текст сообщения (для типа 'Текстовое')"),
+                    ui.Input(param_name="rss_url", placeholder="RSS URL (для типа 'Новости из RSS')"),
+                    ui.Input(
+                        param_name="target_chat_id",
+                        placeholder="ID группы (напр. -1001234567890) — пусто = только владельцу",
+                    ),
                 ],
             ),
         ]),

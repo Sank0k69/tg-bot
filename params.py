@@ -34,8 +34,10 @@ class AddScheduleParams(BaseModel):
     bot_name: str = Field(..., description="Bot name to add schedule to")
     description: str = Field(..., description="Human-readable description of the schedule")
     cron_expr: str = Field(..., description="Cron expression, e.g. '0 8 * * *' for 8am daily")
-    task_type: str = Field(..., description="'analytics_daily' | 'analytics_weekly' | 'custom_message'")
+    task_type: str = Field(..., description="'analytics_daily' | 'analytics_weekly' | 'custom_message' | 'rss_news_post'")
     message: str = Field("", description="Message text for custom_message task type")
+    rss_url: str = Field("", description="RSS feed URL for rss_news_post task type")
+    target_chat_id: str = Field("", description="Target Telegram chat ID for group posting (e.g. -1001234567890). Leave empty to post to bot owner.")
 
 
 class RemoveScheduleParams(BaseModel):

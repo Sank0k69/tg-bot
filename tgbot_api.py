@@ -64,10 +64,12 @@ async def mos_send_message(ctx, bot_id: str = None, bot_name: str = None,
 
 
 async def mos_add_schedule(ctx, bot_id: str, cron_expr: str, description: str,
-                            task_type: str, task_config: dict) -> dict:
+                            task_type: str, task_config: dict,
+                            target_chat_id: str = "") -> dict:
     return await _post(ctx, "/api/tgbot/schedule/add", {
         **_scope(ctx), "bot_id": bot_id, "cron_expr": cron_expr,
         "description": description, "task_type": task_type, "task_config": task_config,
+        "target_chat_id": target_chat_id,
     })
 
 

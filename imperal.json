@@ -325,7 +325,7 @@
     },
     {
       "name": "add_schedule",
-      "description": "Add a scheduled notification to a bot. task_type: 'analytics_daily' (daily traffic), 'analytics_weekly' (weekly report), 'custom_message' (fixed text). cron_expr examples: '0 8 * * *' = 8am daily, '0 9 * * 1' = 9am every Monday.",
+      "description": "Add a scheduled notification to a bot. task_type: 'analytics_daily' (daily traffic), 'analytics_weekly' (weekly report), 'custom_message' (fixed text), 'rss_news_post' (fetch RSS feed and post latest news — requires rss_url). For group posting, set target_chat_id to the group's chat ID (bot must be admin). cron_expr examples: '0 8 * * *' = 8am daily, '0 9 * * 1' = 9am every Monday.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -350,7 +350,7 @@
             "type": "string"
           },
           "task_type": {
-            "description": "'analytics_daily' | 'analytics_weekly' | 'custom_message'",
+            "description": "'analytics_daily' | 'analytics_weekly' | 'custom_message' | 'rss_news_post'",
             "title": "Task Type",
             "type": "string"
           },
@@ -358,6 +358,18 @@
             "default": "",
             "description": "Message text for custom_message task type",
             "title": "Message",
+            "type": "string"
+          },
+          "rss_url": {
+            "default": "",
+            "description": "RSS feed URL to fetch news from (required for rss_news_post task type).",
+            "title": "Rss Url",
+            "type": "string"
+          },
+          "target_chat_id": {
+            "default": "",
+            "description": "Target Telegram chat ID for group posting (e.g. -1001234567890). Leave empty to post to bot owner only.",
+            "title": "Target Chat Id",
             "type": "string"
           }
         },
