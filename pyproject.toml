@@ -3,7 +3,7 @@ name = "tg-bot"
 version = "1.0.0"
 description = "TG Bot Builder — create AI bots connected to the Imperal platform"
 requires-python = ">=3.9"
-dependencies = ["imperal-sdk>=4.1.9"]
+dependencies = ["imperal-sdk>=5.0.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
